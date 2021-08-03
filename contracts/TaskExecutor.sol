@@ -19,6 +19,8 @@ contract TaskExecutor is ITaskExecutor, Config {
         owner = msg.sender;
     }
 
+    // TODO: modifier delegateCall only
+
     /**
      * @notice task execution function.
      * @param tos The address of action.
