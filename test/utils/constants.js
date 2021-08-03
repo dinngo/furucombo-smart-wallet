@@ -110,4 +110,5 @@ module.exports = {
 
   // Polygon DSProxy
   DSProxyFactory: '0x8d81E76ff08fda45364abE336BB5807004A7E207',
+  DSProxyRegistry: '0x5C31C92FC9Cd5506998Eb1388f1F9d01Db67b791',
 };
