@@ -1,8 +1,8 @@
-# Furu-DSProxy
+# Furucombo-Smart-Wallet
 
 ## Overview
 
-Furu-DSProxy includes Task Executor and Actions.
+Furucombo-Smart-Wallet includes Task Executor and Actions.
 
 ### Installation
 
@@ -27,7 +27,7 @@ $ POLYGON_MAINNET_NODE=https://polygon-mainnet.infura.io/v3/{Your_project_ID} np
 
 ### Usage
 
-Furucombo contracts contains two different parts, **Task Executor** and **Action**.
+Furucombo-Smart-Wallet contracts contains two different parts, **Task Executor** and **Action**.
 
 #### Task Executor
 

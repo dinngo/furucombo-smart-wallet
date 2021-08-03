@@ -1,5 +1,5 @@
 {
-  "name": "furu-dsproxy",
+  "name": "furucombo-smart-wallet",
   "version": "1.0.0",
   "description": "",
   "main": "",
@@ -22,8 +22,7 @@
     "truffle": "5.3.9"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "3.4.1",
-    "@truffle/hdwallet-provider": "^1.4.2"
+    "@openzeppelin/contracts": "3.4.1"
   },
   "husky": {
     "hooks": {
