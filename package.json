@@ -13,6 +13,7 @@
   "license": "MIT",
   "devDependencies": {
     "@openzeppelin/test-helpers": "^0.5.11",
+    "ethereumjs-abi": "^0.6.8",
     "ethereumjs-util": "^7.0.10",
     "ethereumjs-wallet": "^1.0.1",
     "ganache-cli": "^6.11.0",
