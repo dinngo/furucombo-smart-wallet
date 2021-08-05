@@ -54,6 +54,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'createAndSetAuth', []);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
 
       const newAuthAddress = await this.userProxy.authority.call();
@@ -67,6 +68,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
 
       const newAuthAddress = await this.userProxy.authority.call();
@@ -96,6 +98,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data0 = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers0]);
       await this.userProxy.execute(this.aAuth.address, data0, {
         from: user,
+        value: ether('0.01'),
       });
       const firstAuthAddress = await this.userProxy.authority.call();
       const firstAuth = await IDSAuth.at(firstAuthAddress);
@@ -114,6 +117,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data1 = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers1]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data1, {
         from: callers0[0],
+        value: ether('0.01'),
       });
       const newAuthAddress = await this.userProxy.authority.call();
       const newAuth = await IDSAuth.at(newAuthAddress);
@@ -141,6 +145,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'createAndSetAuth', []);
       await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
       this.authAddress = await this.userProxy.authority.call();
       this.auth = await IDSAuth.at(this.authAddress);
@@ -152,6 +157,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'permit', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
 
       // Verify Auth
@@ -176,6 +182,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'permit', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
 
       // Verify Auth
@@ -210,6 +217,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       await expectRevert.unspecified(
         this.userProxy.execute(this.aAuth.address, data, {
           from: user,
+          value: ether('0.01'),
         })
       );
     });
@@ -246,6 +254,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'forbid', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
 
       // Verify Auth
@@ -263,6 +272,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       const data = getCallData(AAuth, 'forbid', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
+        value: ether('0.01'),
       });
 
       // Verify Auth
@@ -297,6 +307,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       await expectRevert.unspecified(
         this.userProxy.execute(this.aAuth.address, data, {
           from: user,
+          value: ether('0.01'),
         })
       );
     });
