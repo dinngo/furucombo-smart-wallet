@@ -43,6 +43,14 @@ contract FooAction  {
         ret = Foo(to).barUint1(a);
     }
 
+    function barUint2(address to, uint256 a, uint256 value)
+        external
+        payable
+        returns (uint256 ret)
+    {
+        ret = Foo(to).barUint2{value: value}(a);
+    }
+
     function barUList(
         address to,
         uint256 a,
@@ -50,5 +58,12 @@ contract FooAction  {
         uint256 c
     ) external payable returns (uint256[] memory ret) {
         ret = Foo(to).barUList(a, b, c);
+    }
+
+    function barUList2(
+        address to,
+        uint256[] calldata uList
+    ) external payable returns (uint256[] memory ret) {
+        ret = Foo(to).barUList2(uList);
     }
 }

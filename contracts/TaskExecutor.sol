@@ -61,7 +61,7 @@ contract TaskExecutor is ITaskExecutor, Config {
             bytes32 config = configs[i];
             // Check if the data contains dynamic parameter
             if (!config.isStatic()) {
-                // If so, trim the exectution data base on the configuration and stack content
+                // If so, trim the execution data base on the configuration and stack content
                 _trim(datas[i], config, localStack, index);
             }
             // TODO: add execute call() case
@@ -160,6 +160,7 @@ contract TaskExecutor is ITaskExecutor, Config {
         internal
         returns (bytes memory result)
     {
+        require(_to.isContract(), "Not allow delegate call from EOA");
         assembly {
             let succeeded := delegatecall(
                 sub(gas(), 5000),

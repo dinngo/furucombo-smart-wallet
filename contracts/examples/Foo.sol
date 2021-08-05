@@ -3,6 +3,7 @@ pragma solidity ^0.6.0;
 contract Foo {
     bytes32 public bValue;
     uint256 public nValue;
+    uint256[] public nList;
 
     function bar() external returns (bytes32) {
         return
@@ -29,6 +30,11 @@ contract Foo {
         return nValue;
     }
 
+    function barUint2(uint256 a) external payable returns (uint256) {
+        nValue = a;
+        return nValue;
+    }
+
     function barUList(
         uint256 a,
         uint256 b,
@@ -39,5 +45,12 @@ contract Foo {
         uList[1] = b;
         uList[2] = c;
         return uList;
+    }
+
+    function barUList2(
+        uint256[] memory uList
+    ) external returns (uint256[] memory) {
+        nList = uList;
+        return nList;
     }
 }
