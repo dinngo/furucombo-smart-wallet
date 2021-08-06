@@ -17,6 +17,7 @@
     "ethereumjs-util": "^7.0.10",
     "ethereumjs-wallet": "^1.0.1",
     "ganache-cli": "^6.11.0",
+    "node-fetch": "^2.6.0",
     "prettier": "1.19.1",
     "prettier-plugin-solidity": "1.0.0-beta.1",
     "solhint": "3.0.0",
