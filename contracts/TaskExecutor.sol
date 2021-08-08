@@ -14,12 +14,17 @@ contract TaskExecutor is ITaskExecutor, Config {
     using LibParam for bytes32;
 
     address public immutable owner;
+    address private immutable self;
 
     constructor() public {
         owner = msg.sender;
+        self = address(this);
     }
 
-    // TODO: modifier delegateCall only
+    modifier delegateCallOnly() {
+        require(address(this) != self);
+        _;
+    }
 
     /**
      * @notice task execution function.
@@ -31,7 +36,7 @@ contract TaskExecutor is ITaskExecutor, Config {
         address[] calldata tos,
         bytes32[] calldata configs,
         bytes[] memory datas
-    ) external payable override {
+    ) external payable override delegateCallOnly {
         _execs(tos, configs, datas);
     }
 
@@ -57,27 +62,77 @@ contract TaskExecutor is ITaskExecutor, Config {
             tos.length == configs.length,
             "Tos and configs length inconsistent"
         );
+
         for (uint256 i = 0; i < tos.length; i++) {
             bytes32 config = configs[i];
-            // Check if the data contains dynamic parameter
-            if (!config.isStatic()) {
-                // If so, trim the execution data base on the configuration and stack content
-                _trim(datas[i], config, localStack, index);
-            }
-            // TODO: add execute call() case
-            // Check if the output will be referenced afterwards
-            bytes memory result = _exec(tos[i], datas[i]);
-            if (config.isReferenced()) {
-                // If so, parse the output and place it into local stack
-                uint256 num = config.getReturnNum();
-                uint256 newIndex = _parse(localStack, result, index);
-                require(
-                    newIndex == index + num,
-                    "Return num and parsed return num not matched"
-                );
-                index = newIndex;
+
+            if (config.isDelegateCall()) {
+                // parse params from local stack depend on config
+                _trimParams(datas[i], config, localStack, index);
+
+                // execute action by delegate call
+                bytes memory result = _execDelegateCall(tos[i], datas[i]);
+
+                // store return value from action to local stack
+                index = _parseReturn(result, config, localStack, index);
+            } else {
+                (uint256 ethValue, bytes memory _data) =
+                    _decodeEthValue(datas[i]);
+
+                _trimParams(_data, config, localStack, index);
+
+                // execute action by call
+                bytes memory result = _execCall(tos[i], _data, ethValue);
+
+                // store return value from action to local stack depend on config
+                index = _parseReturn(result, config, localStack, index);
             }
         }
+    }
+
+    /**
+     * @notice Trimming the execution parameter if needed.
+     * @param data The execution data.
+     * @param config The configuration.
+     * @param localStack The stack the be referenced.
+     * @param index Current element count of localStack.
+     */
+    function _trimParams(
+        bytes memory data,
+        bytes32 config,
+        bytes32[256] memory localStack,
+        uint256 index
+    ) internal pure {
+        if (!config.isStatic()) {
+            // If so, trim the execution data base on the configuration and stack content
+            _trim(data, config, localStack, index);
+        }
+    }
+
+    /**
+     * @notice Parse the execution return data to the local stack if needed.
+     * @param ret The return data.
+     * @param config The configuration.
+     * @param localStack The local stack to place the return values.
+     * @param index The current tail.
+     */
+    function _parseReturn(
+        bytes memory ret,
+        bytes32 config,
+        bytes32[256] memory localStack,
+        uint256 index
+    ) internal pure returns (uint256) {
+        if (config.isReferenced()) {
+            // If so, parse the output and place it into local stack
+            uint256 num = config.getReturnNum();
+            uint256 newIndex = _parse(localStack, ret, index);
+            require(
+                newIndex == index + num,
+                "Return num and parsed return num not matched"
+            );
+            index = newIndex;
+        }
+        return index;
     }
 
     /**
@@ -152,11 +207,23 @@ contract TaskExecutor is ITaskExecutor, Config {
     }
 
     /**
+     * @notice decode eth value from the execution data.
+     * @param data The execution data.
+     */
+    function _decodeEthValue(bytes memory data)
+        internal
+        pure
+        returns (uint256, bytes memory)
+    {
+        return abi.decode(data, (uint256, bytes));
+    }
+
+    /**
      * @notice The execution of a single cube.
      * @param _to The handler of cube.
      * @param _data The cube execution data.
      */
-    function _exec(address _to, bytes memory _data)
+    function _execDelegateCall(address _to, bytes memory _data)
         internal
         returns (bytes memory result)
     {
@@ -185,6 +252,22 @@ contract TaskExecutor is ITaskExecutor, Config {
                     revert(add(result, 0x20), size)
                 }
         }
+    }
+
+    /**
+     * @notice The execution of a single cube through call.
+     * @param _to The address of action.
+     * @param _data The action execution data.
+     * @param _value The action execution ether.
+     */
+    function _execCall(
+        address _to,
+        bytes memory _data,
+        uint256 _value
+    ) internal returns (bytes memory) {
+        (bool success, bytes memory result) = _to.call{value: _value}(_data);
+        require(success, "call external contract fail");
+        return result;
     }
 
     /**

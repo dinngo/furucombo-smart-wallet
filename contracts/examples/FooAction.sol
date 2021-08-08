@@ -66,4 +66,9 @@ contract FooAction  {
     ) external payable returns (uint256[] memory ret) {
         ret = Foo(to).barUList2(uList);
     }
+
+    function revertCall(
+    ) external {
+        revert("revert");
+    }
 }

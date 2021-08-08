@@ -53,4 +53,9 @@ contract Foo {
         nList = uList;
         return nList;
     }
+
+    function revertCall(
+    ) external pure {
+        revert("revert");
+    }
 }

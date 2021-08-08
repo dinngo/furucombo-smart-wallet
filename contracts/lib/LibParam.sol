@@ -10,6 +10,8 @@ library LibParam {
         0x00000000000000000000000000000000000000000000000000000000000000FF;
     bytes32 private constant RETURN_NUM_MASK =
         0x00FF000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant CALLTYPE_MASK =
+        0x0200000000000000000000000000000000000000000000000000000000000000;
 
     uint256 private constant REFS_LIMIT = 22;
     uint256 private constant PARAMS_SIZE_LIMIT = 64;
@@ -23,6 +25,13 @@ library LibParam {
     function isReferenced(bytes32 conf) internal pure returns (bool) {
         if (getReturnNum(conf) == 0) return false;
         else return true;
+    }
+
+    function isDelegateCall(bytes32 conf) internal pure returns (bool) {
+        if (conf & CALLTYPE_MASK == 0) return true;
+        else return false;
+
+        // return (conf & CALLTYPE_MASK == 0);
     }
 
     function getReturnNum(bytes32 conf) internal pure returns (uint256 num) {
