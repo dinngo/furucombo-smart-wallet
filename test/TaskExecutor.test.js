@@ -9,10 +9,7 @@ const {
 } = require('@openzeppelin/test-helpers');
 const { tracker } = balance;
 const { ZERO_BYTES32, MAX_UINT256, ZERO_ADDRESS } = constants;
-const utils = web3.utils;
-
 const { expect } = require('chai');
-
 const {
   evmRevert,
   evmSnapshot,
@@ -31,7 +28,6 @@ contract('TaskExecutor', function([_, user, someone]) {
   let id;
   let balanceUser;
   let balanceSomeone;
-  let balanceProxy;
 
   before(async function() {
     this.dsProxyRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
@@ -73,9 +69,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address],
-          [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-          ],
+          [ZERO_BYTES32],
           [actionAData],
         ]);
         const target = this.taskExecutor.address;
@@ -105,10 +99,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address, this.fooAction.address],
-          [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-          ],
+          [ZERO_BYTES32, ZERO_BYTES32],
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
@@ -136,9 +127,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address],
-          [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-          ],
+          [ZERO_BYTES32],
           [actionAData],
         ]);
         const target = this.taskExecutor.address;
@@ -164,9 +153,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS],
-          [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-          ],
+          [ZERO_BYTES32],
           [actionAData],
         ]);
         const target = this.taskExecutor.address;
@@ -177,7 +164,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: revert in contract', async function() {
+      it('should revert: action revert', async function() {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
@@ -190,9 +177,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS],
-          [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-          ],
+          [ZERO_BYTES32],
           [actionAData],
         ]);
         const target = this.taskExecutor.address;
@@ -214,10 +199,65 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS],
-          [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
-          ],
+          [ZERO_BYTES32],
           [actionAData],
+        ]);
+        const target = this.taskExecutor.address;
+        await expectRevert.unspecified(
+          this.userProxy.execute(target, data, {
+            from: user,
+          })
+        );
+      });
+
+      it('should revert: delegate call only', async function() {
+        await expectRevert(
+          this.taskExecutor.batchExec([], [], [], {
+            from: user,
+          }),
+          'delegate call only'
+        );
+      });
+
+      it('should revert: tos and datas length are inconsistent', async function() {
+        // Prepare action data
+        const value = ether('1');
+        const expectNValue = new BN(101);
+        const actionAData = getCallData(FooAction, 'barUint2', [
+          this.foo.address,
+          expectNValue,
+          value,
+        ]);
+
+        // Prepare task data and execute
+        const data = getCallData(TaskExecutor, 'batchExec', [
+          [ZERO_ADDRESS, ZERO_ADDRESS],
+          [ZERO_BYTES32, ZERO_BYTES32],
+          [actionAData],
+        ]);
+        const target = this.taskExecutor.address;
+        await expectRevert.unspecified(
+          this.userProxy.execute(target, data, {
+            from: user,
+          })
+        );
+      });
+
+      it('should revert: tos and configs length are inconsistent', async function() {
+        // Prepare action data
+        const value = ether('1');
+        const expectNValue = new BN(101);
+        const actionAData = getCallData(FooAction, 'barUint2', [
+          this.foo.address,
+          expectNValue,
+          value,
+        ]);
+
+        // Prepare task data and execute
+        const data = getCallData(TaskExecutor, 'batchExec', [
+          [ZERO_ADDRESS, ZERO_ADDRESS],
+          [ZERO_BYTES32],
+          [actionAData, actionAData],
         ]);
         const target = this.taskExecutor.address;
         await expectRevert.unspecified(
@@ -254,6 +294,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
       });
 
@@ -289,6 +330,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
         expect(await this.foo.bValue.call()).to.be.eq(expectBValue);
       });
@@ -316,6 +358,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
         expect(await balanceFoo.delta()).to.be.bignumber.eq(actionEthValue);
       });
@@ -341,6 +384,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await balanceSomeone.delta()).to.be.bignumber.eq(actionEthValue);
       });
 
@@ -397,7 +441,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
     describe('execute by mix calls', function() {
       before(async function() {
-        await send.ether(user, this.userProxy.address, ether('10'));
+        // await send.ether(user, this.userProxy.address, ether('10'));
       });
 
       it('delegate call + call', async function() {
@@ -419,7 +463,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address, this.foo.address],
           [
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ZERO_BYTES32,
             '0x0200000000000000000000000000000000000000000000000000000000000000',
           ],
           [actionAData, actionBData],
@@ -429,6 +473,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
         expect(await this.foo.bValue.call()).to.be.eq(expectBValue);
       });
@@ -453,7 +498,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.fooAction.address],
           [
             '0x0200000000000000000000000000000000000000000000000000000000000000',
-            '0x0000000000000000000000000000000000000000000000000000000000000000',
+            ZERO_BYTES32,
           ],
           [actionAData, actionBData],
         ]);
@@ -462,6 +507,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
         expect(await this.foo.bValue.call()).to.be.eq(expectBValue);
       });
@@ -471,7 +517,7 @@ contract('TaskExecutor', function([_, user, someone]) {
   describe('chained input', function() {
     describe('dynamic parameter by delegate call', function() {
       before(async function() {
-        await send.ether(user, this.userProxy.address, ether('10'));
+        // await send.ether(user, this.userProxy.address, ether('10'));
       });
 
       it('replace parameter', async function() {
@@ -479,7 +525,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -487,7 +533,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.fooAction.address],
           [
             '0x0001000000000000000000000000000000000000000000000000000000000000',
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -503,13 +549,14 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace parameter with dynamic array return', async function() {
         // Prepare action data
         const secAmt = ether('1');
-        const ratio = ether('0.7');
         const actionAData = getCallData(FooAction, 'barUList', [
           this.foo.address,
           ether('1'),
           secAmt,
           ether('1'),
         ]);
+
+        const ratio = ether('0.7');
         const actionBData = getCallData(FooAction, 'barUint1', [
           this.foo.address,
           ratio,
@@ -531,6 +578,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(
           secAmt.mul(ratio).div(ether('1'))
         );
@@ -542,7 +590,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionBData = getCallData(FooAction, 'bar2', [
           this.foo.address,
           '0x000000000000000000000000000000000000000000000000000000000000000a',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -550,7 +598,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.fooAction.address],
           [
             '0x0001000000000000000000000000000000000000000000000000000000000000',
-            '0x0100000000000000000400ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0100000000000000000400ffffffffffffffffffffffffffffffffffffffffff', // replace params[2] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -565,10 +613,11 @@ contract('TaskExecutor', function([_, user, someone]) {
 
       it('replace parameter by 50% of ref value', async function() {
         // Prepare action data
-        const percent = ether('0.5');
         const actionAData = getCallData(FooAction, 'barUint', [
           this.foo.address,
         ]);
+
+        const percent = ether('0.5');
         const actionBData = getCallData(FooAction, 'barUint1', [
           this.foo.address,
           percent,
@@ -579,7 +628,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.fooAction.address],
           [
             '0x0001000000000000000000000000000000000000000000000000000000000000',
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -613,7 +662,10 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.fooAction.address],
           [
             '0x0005000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x01000000000000000038040302ffffffffffffffffffffffffffffffffffffff', //replace params[1] -> local stack[3]
+            // replace params[5] <- local stack[4]
+            // replace params[4] <- local stack[3]
+            // replace params[3] <- local stack[2]
+            '0x01000000000000000038040302ffffffffffffffffffffffffffffffffffffff',
           ],
           [actionAData, actionBData],
         ]);
@@ -635,7 +687,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -661,7 +713,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -687,7 +739,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -696,7 +748,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // 1 32-bytes return value to be referenced
             '0x0001000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000201ffffffffffffffffffffffffffffffffffffffffff', // ref to localStack[1]
+            '0x0100000000000000000201ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[1]
           ],
           [actionAData, actionBData],
         ]);
@@ -713,7 +765,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -722,7 +774,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // expect 2 32-bytes return but will only get 1
             '0x0002000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // ref to localStack[1]
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -750,7 +802,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // expect 2 32-bytes return but will only get 1
             '0x0001000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // ref to localStack[1]
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -765,7 +817,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
     describe('dynamic parameter by call', function() {
       before(async function() {
-        await send.ether(user, this.userProxy.address, ether('10'));
+        // await send.ether(user, this.userProxy.address, ether('10'));
       });
 
       it('replace parameter', async function() {
@@ -775,7 +827,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -783,7 +835,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.foo.address],
           [
             '0x0201000000000000000000000000000000000000000000000000000000000000',
-            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -823,7 +875,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.foo.address],
           [
             '0x0205000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0300000000000000000102ffffffffffffffffffffffffffffffffffffffffff', //replace params[0] -> local stack[3]
+            '0x0300000000000000000102ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[2]
           ],
           [actionAData, actionBData],
         ]);
@@ -832,6 +884,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(
           secAmt.mul(ratio).div(ether('1'))
         );
@@ -845,7 +898,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar2', [
           '0x000000000000000000000000000000000000000000000000000000000000000a',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -853,7 +906,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.foo.address],
           [
             '0x0201000000000000000000000000000000000000000000000000000000000000',
-            '0x0300000000000000000200ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0300000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -890,7 +943,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.foo.address],
           [
             '0x0201000000000000000000000000000000000000000000000000000000000000',
-            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -929,7 +982,10 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.foo.address],
           [
             '0x0205000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0300000000000000001C040302ffffffffffffffffffffffffffffffffffffff', //replace params[1] -> local stack[3]
+            // replace params[4] <- local stack[4]
+            // replace params[3] <- local stack[3]
+            // replace params[2] <- local stack[2]
+            '0x0300000000000000001C040302ffffffffffffffffffffffffffffffffffffff',
           ],
           [actionAData, actionBData],
         ]);
@@ -953,7 +1009,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -981,8 +1037,8 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar2', [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1010,7 +1066,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1019,7 +1075,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // 1 32-bytes return value to be referenced
             '0x0201000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0300000000000000000101ffffffffffffffffffffffffffffffffffffffffff', // ref to localStack[1]
+            '0x0300000000000000000101ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[1]
           ],
           [actionAData, actionBData],
         ]);
@@ -1038,7 +1094,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1047,7 +1103,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // expect 2 32-bytes return but will only get 1
             '0x0202000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // ref to localStack[1]
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1083,7 +1139,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // expect 2 32-bytes return but will only get 1
             '0x0201000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // ref to localStack[1]
+            '0x0100000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1107,7 +1163,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1115,7 +1171,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.foo.address],
           [
             '0x0001000000000000000000000000000000000000000000000000000000000000',
-            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1135,7 +1191,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1143,7 +1199,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.fooAction.address],
           [
             '0x0201000000000000000000000000000000000000000000000000000000000000',
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1182,7 +1238,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.foo.address],
           [
             '0x0005000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0300000000000000000102ffffffffffffffffffffffffffffffffffffffffff', //replace params[0] -> local stack[3]
+            '0x0300000000000000000102ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[2]
           ],
           [actionAData, actionBData],
         ]);
@@ -1191,6 +1247,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           from: user,
         });
 
+        // Verify
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(
           secAmt.mul(ratio).div(ether('1'))
         );
@@ -1219,7 +1276,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.fooAction.address],
           [
             '0x0205000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0100000000000000000203ffffffffffffffffffffffffffffffffffffffffff', //replace params[0] -> local stack[3]
+            '0x0100000000000000000203ffffffffffffffffffffffffffffffffffffffffff', //replace params[1] <- local stack[3]
           ],
           [actionAData, actionBData],
         ]);
@@ -1239,7 +1296,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionBEthValue = ether('0');
         const actionBData = genCallActionData(actionBEthValue, Foo, 'bar2', [
           '0x000000000000000000000000000000000000000000000000000000000000000a',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1247,7 +1304,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.foo.address],
           [
             '0x0001000000000000000000000000000000000000000000000000000000000000',
-            '0x0300000000000000000200ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0300000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1269,7 +1326,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionBData = getCallData(FooAction, 'bar2', [
           this.foo.address,
           '0x000000000000000000000000000000000000000000000000000000000000000a',
-          '0x0000000000000000000000000000000000000000000000000000000000000000',
+          ZERO_BYTES32,
         ]);
 
         // Prepare task data and execute
@@ -1277,7 +1334,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.fooAction.address],
           [
             '0x0201000000000000000000000000000000000000000000000000000000000000',
-            '0x0100000000000000000400ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0100000000000000000400ffffffffffffffffffffffffffffffffffffffffff', // replace params[2] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1310,7 +1367,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.foo.address],
           [
             '0x0001000000000000000000000000000000000000000000000000000000000000',
-            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1346,7 +1403,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.fooAction.address],
           [
             '0x0201000000000000000000000000000000000000000000000000000000000000',
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff',
+            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1384,7 +1441,10 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.foo.address],
           [
             '0x0005000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0300000000000000001C040302ffffffffffffffffffffffffffffffffffffff', //replace params[1] -> local stack[3]
+            // replace params[4] <- local stack[4]
+            // replace params[3] <- local stack[3]
+            // replace params[2] <- local stack[2]
+            '0x0300000000000000001C040302ffffffffffffffffffffffffffffffffffffff',
           ],
           [actionAData, actionBData],
         ]);
@@ -1422,7 +1482,10 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.fooAction.address],
           [
             '0x0205000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x01000000000000000038040302ffffffffffffffffffffffffffffffffffffff', //replace params[1] -> local stack[3]
+            // replace params[5] <- local stack[4]
+            // replace params[4] <- local stack[3]
+            // replace params[3] <- local stack[2]
+            '0x01000000000000000038040302ffffffffffffffffffffffffffffffffffffff',
           ],
           [actionAData, actionBData],
         ]);
@@ -1438,6 +1501,26 @@ contract('TaskExecutor', function([_, user, someone]) {
           );
         }
       });
+    });
+  });
+
+  describe('kill', function() {
+    it('kill by owner', async function() {
+      await this.taskExecutor.kill({
+        from: _,
+      });
+
+      // Verify
+      expect(await web3.eth.getCode(this.taskExecutor.address)).eq('0x');
+    });
+
+    it('should revert: kill by invalid owner', async function() {
+      await expectRevert(
+        this.taskExecutor.kill({
+          from: user,
+        }),
+        'invalid owner'
+      );
     });
   });
 });

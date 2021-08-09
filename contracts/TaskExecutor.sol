@@ -14,16 +14,16 @@ contract TaskExecutor is ITaskExecutor, Config {
     using LibParam for bytes32;
 
     address public immutable owner;
-    address private immutable self;
+    address private immutable THIS;
+
+    modifier delegateCallOnly() {
+        require(THIS != address(this), "delegate call only");
+        _;
+    }
 
     constructor() public {
         owner = msg.sender;
-        self = address(this);
-    }
-
-    modifier delegateCallOnly() {
-        require(address(this) != self);
-        _;
+        THIS = address(this);
     }
 
     /**
@@ -76,6 +76,7 @@ contract TaskExecutor is ITaskExecutor, Config {
                 // store return value from action to local stack
                 index = _parseReturn(result, config, localStack, index);
             } else {
+                // decode eth value from data
                 (uint256 ethValue, bytes memory _data) =
                     _decodeEthValue(datas[i]);
 
@@ -274,7 +275,7 @@ contract TaskExecutor is ITaskExecutor, Config {
      * @notice /// destroy the contract and reclaim the leftover funds.
      */
     function kill() external {
-        require(msg.sender == owner);
+        require(msg.sender == owner, "invalid owner");
         selfdestruct(msg.sender);
     }
 }
