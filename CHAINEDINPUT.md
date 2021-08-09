@@ -21,9 +21,12 @@ config is a bytes32 data represented by hex.
 
 - `255-248` bits are reserved for parameter config.
 - `248`: 1 if the parameter is dynamic, 0 if the parameter is static.
+- `249`: 1 if using `Call` type, 0 if using `delegateCall` type.
 - Example:
-  - `0x00` => `(b00)`: static parameter.
-  - `0x01` => `(b01)`: dynamic parameter.
+  - `0x00` => `(b00)`: static parameter with delegate call.
+  - `0x01` => `(b01)`: dynamic parameter with deleate call.
+  - `0x10` => `(b10)`: static parameter with call.
+  - `0x11` => `(b11)`: dynamic parameter with call.
 
 ### Return data count
 
