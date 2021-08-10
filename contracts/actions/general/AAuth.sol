@@ -7,13 +7,13 @@ contract AAuth {
     /// bytes4(keccak256("execute(address,bytes)"))
     bytes4 public constant FUNCTION_SIG_EXECUTE = 0x1cff79cd;
 
-    function createAndSetAuth() public payable returns (DSGuard guard) {
+    function createAndSetAuth() external payable returns (DSGuard guard) {
         guard = new DSGuard();
         IDSProxy(address(this)).setAuthority(address(guard));
     }
 
-    function createAndSetAuthPrePermit(address[] memory authCallers)
-        public
+    function createAndSetAuthPrePermit(address[] calldata authCallers)
+        external
         payable
         returns (DSGuard guard)
     {
@@ -24,14 +24,14 @@ contract AAuth {
         IDSProxy(address(this)).setAuthority(address(guard));
     }
 
-    function permit(address[] memory authCallers) public payable {
+    function permit(address[] calldata authCallers) external payable {
         DSGuard guard = DSGuard(IDSProxy(address(this)).authority());
         for (uint256 i = 0; i < authCallers.length; i++) {
             guard.permit(authCallers[i], address(this), FUNCTION_SIG_EXECUTE);
         }
     }
 
-    function forbid(address[] memory forbidCallers) public payable {
+    function forbid(address[] calldata forbidCallers) external payable {
         DSGuard guard = DSGuard(IDSProxy(address(this)).authority());
         for (uint256 i = 0; i < forbidCallers.length; i++) {
             guard.forbid(forbidCallers[i], address(this), FUNCTION_SIG_EXECUTE);
