@@ -94,16 +94,17 @@ contract('AAuth', function([_, user, someone1, someone2]) {
 
     it('replace existing auth', async function() {
       // First Auth
-      const callers0 = [someone1];
-      const data0 = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers0]);
-      await this.userProxy.execute(this.aAuth.address, data0, {
+      const firstAuth = await DSGuard.new();
+      await firstAuth.permit(
+        someone1,
+        this.userProxy.address,
+        FUNCTION_SIG_EXECUTE
+      );
+      await this.userProxy.setAuthority(firstAuth.address, {
         from: user,
-        value: ether('0.01'),
       });
-      const firstAuthAddress = await this.userProxy.authority.call();
-      const firstAuth = await IDSAuth.at(firstAuthAddress);
-      expect(firstAuthAddress).to.be.not.zero;
       // Verify Auth
+      expect(await this.userProxy.authority.call()).to.be.eq(firstAuth.address);
       expect(
         await firstAuth.canCall.call(
           someone1,
@@ -113,15 +114,15 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       ).to.be.true;
 
       // Second Auth
-      const callers1 = [someone2];
-      const data1 = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers1]);
-      const receipt = await this.userProxy.execute(this.aAuth.address, data1, {
-        from: callers0[0],
+      const callers = [someone2];
+      const data = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers]);
+      const receipt = await this.userProxy.execute(this.aAuth.address, data, {
+        from: someone1,
         value: ether('0.01'),
       });
       const newAuthAddress = await this.userProxy.authority.call();
       const newAuth = await IDSAuth.at(newAuthAddress);
-      expect(newAuthAddress).to.be.not.eq(firstAuthAddress);
+      expect(newAuthAddress).to.be.not.eq(firstAuth.address);
       // Verify Auth
       expect(
         await newAuth.canCall.call(
@@ -142,14 +143,26 @@ contract('AAuth', function([_, user, someone1, someone2]) {
 
   describe('Permit', function() {
     beforeEach(async function() {
-      const data = getCallData(AAuth, 'createAndSetAuth', []);
-      await this.userProxy.execute(this.aAuth.address, data, {
-        from: user,
-        value: ether('0.01'),
-      });
-      this.authAddress = await this.userProxy.authority.call();
-      this.auth = await IDSAuth.at(this.authAddress);
-      expect(this.authAddress).to.be.not.zero;
+      this.auth = await DSGuard.new();
+      await this.auth.setOwner(this.userProxy.address);
+      await this.userProxy.setAuthority(this.auth.address, { from: user });
+      expect(await this.userProxy.authority.call()).to.be.eq(this.auth.address);
+      expect(await this.auth.owner.call()).to.be.eq(this.userProxy.address);
+      // Verify no auth given yet
+      expect(
+        await this.auth.canCall.call(
+          someone1,
+          this.userProxy.address,
+          FUNCTION_SIG_EXECUTE
+        )
+      ).to.be.false;
+      expect(
+        await this.auth.canCall.call(
+          someone2,
+          this.userProxy.address,
+          FUNCTION_SIG_EXECUTE
+        )
+      ).to.be.false;
     });
 
     it('single', async function() {
@@ -225,14 +238,24 @@ contract('AAuth', function([_, user, someone1, someone2]) {
 
   describe('Forbid', function() {
     beforeEach(async function() {
+      // Set new DSGuard with pre permit callers
       const callers = [someone1, someone2];
-      const data = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers]);
-      await this.userProxy.execute(this.aAuth.address, data, {
-        from: user,
-      });
-      this.authAddress = await this.userProxy.authority.call();
-      this.auth = await IDSAuth.at(this.authAddress);
-      expect(this.authAddress).to.be.not.zero;
+      this.auth = await DSGuard.new();
+      await this.auth.permit(
+        callers[0],
+        this.userProxy.address,
+        FUNCTION_SIG_EXECUTE
+      );
+      await this.auth.permit(
+        callers[1],
+        this.userProxy.address,
+        FUNCTION_SIG_EXECUTE
+      );
+      await this.auth.setOwner(this.userProxy.address);
+      await this.userProxy.setAuthority(this.auth.address, { from: user });
+      // Verify pre set conditions
+      expect(await this.userProxy.authority.call()).to.be.eq(this.auth.address);
+      expect(await this.auth.owner.call()).to.be.eq(this.userProxy.address);
       expect(
         await this.auth.canCall.call(
           someone1,
