@@ -335,4 +335,36 @@ contract('AAuth', function([_, user, someone1, someone2]) {
       );
     });
   });
+
+  describe('Kill', function() {
+    beforeEach(async function() {
+      expect(await web3.eth.getCode(this.aAuth.address)).not.eq('0x');
+    });
+
+    it('kill by owner', async function() {
+      await this.aAuth.kill({
+        from: _,
+      });
+      // Verify
+      expect(await web3.eth.getCode(this.aAuth.address)).eq('0x');
+    });
+
+    it('should revert: kill by invalid owner', async function() {
+      await expectRevert(
+        this.aAuth.kill({
+          from: user,
+        }),
+        'Invalid owner'
+      );
+    });
+
+    it('should revert: used in delegatecall', async function() {
+      const data = getCallData(AAuth, 'kill', []);
+      await expectRevert.unspecified(
+        this.userProxy.execute(this.aAuth.address, data, {
+          from: user,
+        })
+      );
+    });
+  });
 });
