@@ -54,10 +54,6 @@ contract('TaskExecutor', function([_, user, someone]) {
 
   describe('execute', function() {
     describe('execute by delegate call', function() {
-      before(async function() {
-        await send.ether(user, this.userProxy.address, ether('10'));
-      });
-
       it('single action', async function() {
         // Prepare action data
         const expectNValue = new BN(101);
@@ -75,6 +71,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -105,6 +102,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -133,6 +131,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: value,
         });
 
         // Verify
@@ -160,6 +159,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -184,6 +184,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -206,6 +207,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -214,6 +216,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert(
           this.taskExecutor.batchExec([], [], [], {
             from: user,
+            value: ether('0.01'),
           }),
           'Delegate call only'
         );
@@ -239,6 +242,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -263,16 +267,13 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
     });
 
     describe('execute by call', function() {
-      before(async function() {
-        await send.ether(user, this.userProxy.address, ether('10'));
-      });
-
       it('single action', async function() {
         // Prepare action data
         const actionEthValue = ether('0');
@@ -292,6 +293,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -328,6 +330,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -356,6 +359,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: actionEthValue,
         });
 
         // Verify
@@ -382,6 +386,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: actionEthValue,
         });
 
         // Verify
@@ -410,6 +415,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -434,6 +440,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -467,6 +474,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -501,6 +509,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -532,6 +541,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -568,6 +578,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -597,6 +608,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -627,6 +639,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -664,6 +677,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -696,6 +710,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -722,6 +737,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -748,6 +764,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -774,6 +791,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -802,6 +820,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -834,6 +853,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -874,6 +894,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -905,6 +926,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -942,6 +964,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -984,6 +1007,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1018,6 +1042,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -1047,6 +1072,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -1075,6 +1101,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -1103,6 +1130,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -1139,6 +1167,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         await expectRevert.unspecified(
           this.userProxy.execute(target, data, {
             from: user,
+            value: ether('0.01'),
           })
         );
       });
@@ -1166,6 +1195,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1194,6 +1224,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1233,6 +1264,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1271,6 +1303,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(
@@ -1299,6 +1332,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1329,6 +1363,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1362,6 +1397,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1398,6 +1434,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1439,6 +1476,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
@@ -1480,6 +1518,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
           from: user,
+          value: ether('0.01'),
         });
 
         // Verify
