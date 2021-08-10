@@ -17,7 +17,7 @@ contract TaskExecutor is ITaskExecutor, Config {
     address private immutable THIS;
 
     modifier delegateCallOnly() {
-        require(THIS != address(this), "delegate call only");
+        require(THIS != address(this), "Delegate call only");
         _;
     }
 
@@ -67,7 +67,9 @@ contract TaskExecutor is ITaskExecutor, Config {
             bytes32 config = configs[i];
 
             if (config.isDelegateCall()) {
-                // parse params from local stack depend on config
+                // delegateCall case
+
+                // trim params from local stack depend on config
                 _trimParams(datas[i], config, localStack, index);
 
                 // execute action by delegate call
@@ -76,10 +78,13 @@ contract TaskExecutor is ITaskExecutor, Config {
                 // store return value from action to local stack
                 index = _parseReturn(result, config, localStack, index);
             } else {
+                // Call case
+
                 // decode eth value from data
                 (uint256 ethValue, bytes memory _data) =
                     _decodeEthValue(datas[i]);
 
+                // trim params from local stack depend on config
                 _trimParams(_data, config, localStack, index);
 
                 // execute action by call
@@ -187,10 +192,10 @@ contract TaskExecutor is ITaskExecutor, Config {
     ) internal pure returns (uint256 newIndex) {
         uint256 len = ret.length;
         // The return value should be multiple of 32-bytes to be parsed.
-        require(len % 32 == 0, "illegal length for _parse");
+        require(len % 32 == 0, "Illegal length for _parse");
         // Estimate the tail after the process.
         newIndex = index + len / 32;
-        require(newIndex <= 256, "stack overflow");
+        require(newIndex <= 256, "Stack overflow");
         assembly {
             let offset := shl(5, index)
             // Store the data into localStack
@@ -228,7 +233,7 @@ contract TaskExecutor is ITaskExecutor, Config {
         internal
         returns (bytes memory result)
     {
-        require(_to.isContract(), "Not allow delegate call from EOA");
+        require(_to.isContract(), "Not allow delegate call EOA");
         assembly {
             let succeeded := delegatecall(
                 sub(gas(), 5000),
@@ -267,7 +272,7 @@ contract TaskExecutor is ITaskExecutor, Config {
         uint256 _value
     ) internal returns (bytes memory) {
         (bool success, bytes memory result) = _to.call{value: _value}(_data);
-        require(success, "call external contract fail");
+        require(success, "Call external contract fail");
         return result;
     }
 
@@ -275,7 +280,7 @@ contract TaskExecutor is ITaskExecutor, Config {
      * @notice /// destroy the contract and reclaim the leftover funds.
      */
     function kill() external {
-        require(msg.sender == owner, "invalid owner");
+        require(msg.sender == owner, "Invalid owner");
         selfdestruct(msg.sender);
     }
 }

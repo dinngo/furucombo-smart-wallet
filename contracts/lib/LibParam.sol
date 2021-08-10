@@ -28,10 +28,7 @@ library LibParam {
     }
 
     function isDelegateCall(bytes32 conf) internal pure returns (bool) {
-        if (conf & CALLTYPE_MASK == 0) return true;
-        else return false;
-
-        // return (conf & CALLTYPE_MASK == 0);
+        return (conf & CALLTYPE_MASK == 0);
     }
 
     function getReturnNum(bytes32 conf) internal pure returns (uint256 num) {

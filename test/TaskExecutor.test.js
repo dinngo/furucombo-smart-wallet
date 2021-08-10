@@ -61,7 +61,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('single action', async function() {
         // Prepare action data
         const expectNValue = new BN(101);
-        const actionAData = getCallData(FooAction, 'barUint1', [
+        const actionData = getCallData(FooAction, 'barUint1', [
           this.foo.address,
           expectNValue,
         ]);
@@ -70,7 +70,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address],
           [ZERO_BYTES32],
-          [actionAData],
+          [actionData],
         ]);
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
@@ -118,7 +118,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionAData = getCallData(FooAction, 'barUint2', [
+        const actionData = getCallData(FooAction, 'barUint2', [
           this.foo.address,
           expectNValue,
           value,
@@ -128,7 +128,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address],
           [ZERO_BYTES32],
-          [actionAData],
+          [actionData],
         ]);
         const target = this.taskExecutor.address;
         await this.userProxy.execute(target, data, {
@@ -144,7 +144,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionAData = getCallData(FooAction, 'barUint2', [
+        const actionData = getCallData(FooAction, 'barUint2', [
           this.foo.address,
           expectNValue,
           value,
@@ -154,7 +154,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS],
           [ZERO_BYTES32],
-          [actionAData],
+          [actionData],
         ]);
         const target = this.taskExecutor.address;
         await expectRevert.unspecified(
@@ -168,7 +168,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionAData = getCallData(FooAction, 'barUint2', [
+        const actionData = getCallData(FooAction, 'barUint2', [
           this.foo.address,
           expectNValue,
           value,
@@ -178,7 +178,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS],
           [ZERO_BYTES32],
-          [actionAData],
+          [actionData],
         ]);
         const target = this.taskExecutor.address;
         await expectRevert.unspecified(
@@ -192,7 +192,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionAData = web3.eth.abi.encodeFunctionSignature(
+        const actionData = web3.eth.abi.encodeFunctionSignature(
           'noExistedfunc()'
         );
 
@@ -200,7 +200,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS],
           [ZERO_BYTES32],
-          [actionAData],
+          [actionData],
         ]);
         const target = this.taskExecutor.address;
         await expectRevert.unspecified(
@@ -215,7 +215,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           this.taskExecutor.batchExec([], [], [], {
             from: user,
           }),
-          'delegate call only'
+          'Delegate call only'
         );
       });
 
@@ -223,7 +223,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionAData = getCallData(FooAction, 'barUint2', [
+        const actionData = getCallData(FooAction, 'barUint2', [
           this.foo.address,
           expectNValue,
           value,
@@ -233,7 +233,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS, ZERO_ADDRESS],
           [ZERO_BYTES32, ZERO_BYTES32],
-          [actionAData],
+          [actionData],
         ]);
         const target = this.taskExecutor.address;
         await expectRevert.unspecified(
@@ -247,7 +247,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionAData = getCallData(FooAction, 'barUint2', [
+        const actionData = getCallData(FooAction, 'barUint2', [
           this.foo.address,
           expectNValue,
           value,
@@ -257,7 +257,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [ZERO_ADDRESS, ZERO_ADDRESS],
           [ZERO_BYTES32],
-          [actionAData, actionAData],
+          [actionData, actionData],
         ]);
         const target = this.taskExecutor.address;
         await expectRevert.unspecified(
@@ -388,7 +388,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await balanceSomeone.delta()).to.be.bignumber.eq(actionEthValue);
       });
 
-      it('should revert: revert in contract', async function() {
+      it('should revert: call contract revert', async function() {
         // Prepare action data
         const actionEthValue = ether('0');
         const actionData = genCallActionData(
@@ -440,10 +440,6 @@ contract('TaskExecutor', function([_, user, someone]) {
     });
 
     describe('execute by mix calls', function() {
-      before(async function() {
-        // await send.ether(user, this.userProxy.address, ether('10'));
-      });
-
       it('delegate call + call', async function() {
         // Prepare action data
         const expectNValue = new BN(101);
@@ -516,10 +512,6 @@ contract('TaskExecutor', function([_, user, someone]) {
 
   describe('chained input', function() {
     describe('dynamic parameter by delegate call', function() {
-      before(async function() {
-        // await send.ether(user, this.userProxy.address, ether('10'));
-      });
-
       it('replace parameter', async function() {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
@@ -890,7 +882,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace third parameter', async function() {
+      it('replace second parameter', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1153,10 +1145,6 @@ contract('TaskExecutor', function([_, user, someone]) {
     });
 
     describe('dynamic parameter by mix call', function() {
-      before(async function() {
-        await send.ether(user, this.userProxy.address, ether('10'));
-      });
-
       it('replace parameter by delegate call + call', async function() {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
@@ -1290,7 +1278,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace third parameter by delegate call + call', async function() {
+      it('replace second parameter by delegate call + call', async function() {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBEthValue = ether('0');
@@ -1519,7 +1507,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         this.taskExecutor.kill({
           from: user,
         }),
-        'invalid owner'
+        'Invalid owner'
       );
     });
   });
