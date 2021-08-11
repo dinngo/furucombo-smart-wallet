@@ -44,7 +44,7 @@ contract('Destructible', function([owner, other]) {
       );
     });
 
-    it('prevents other proxy from transferring', async function() {
+    it('prevents other proxy from destroying', async function() {
       const data = getCallData(Destructible, 'destroy', []);
       await expectRevert(
         this.otherProxy.execute(this.destructible.address, data, {
