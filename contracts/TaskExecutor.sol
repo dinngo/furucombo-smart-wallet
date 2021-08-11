@@ -1,9 +1,10 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.0;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
-import "./interface/ITaskExecutor.sol";
+import "./interfaces/ITaskExecutor.sol";
 import "./Config.sol";
 import "./lib/LibParam.sol";
 
