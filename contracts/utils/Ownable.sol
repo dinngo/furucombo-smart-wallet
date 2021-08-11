@@ -35,6 +35,7 @@ abstract contract Ownable is Context {
      * @dev Initializes the contract setting the deployer as the initial owner.
      */
     constructor() internal {
+        assert(_OWNER_SLOT == bytes32(uint256(keccak256("ownable.owner")) - 1));
         address msgSender = _msgSender();
         _setOwner(msgSender);
         emit OwnershipTransferred(address(0), msgSender);
