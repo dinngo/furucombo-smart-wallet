@@ -7,13 +7,23 @@ const { ZERO_ADDRESS } = constants;
 
 const { expect } = require('chai');
 
-const { evmRevert, evmSnapshot } = require('./utils/utils');
+const { evmRevert, evmSnapshot, getCallData } = require('./utils/utils');
+
+const { DS_PROXY_REGISTRY } = require('./utils/constants');
 
 const Ownable = artifacts.require('OwnableMock');
+const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
+const IDSProxy = artifacts.require('IDSProxy');
 
 contract('Ownable', function([owner, other]) {
   before(async function() {
     this.ownable = await Ownable.new({ from: owner });
+
+    this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
+    await this.dsRegistry.build(other);
+    this.otherProxy = await IDSProxy.at(
+      await this.dsRegistry.proxies.call(other)
+    );
   });
 
   beforeEach(async function() {
@@ -44,6 +54,16 @@ contract('Ownable', function([owner, other]) {
     it('prevents non-owners from transferring', async function() {
       await expectRevert(
         this.ownable.transferOwnership(other, { from: other }),
+        'Ownable: caller is not the owner'
+      );
+    });
+
+    it('prevents other proxy from transferring', async function() {
+      const data = getCallData(Ownable, 'transferOwnership', [other]);
+      await expectRevert(
+        this.otherProxy.execute(this.ownable.address, data, {
+          from: other,
+        }),
         'Ownable: caller is not the owner'
       );
     });
