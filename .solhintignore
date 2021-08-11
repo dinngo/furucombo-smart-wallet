@@ -1,5 +1,5 @@
 contracts/examples
-contracts/interface
+contracts/interfaces
 contracts/mocks
 
 contracts/**/I*.sol
