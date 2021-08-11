@@ -21,10 +21,10 @@ import "@openzeppelin/contracts/utils/Context.sol";
 abstract contract Ownable is Context {
     /**
      * @dev Storage slot with the owner of the contract.
-     * This is the keccak-256 hash of "ownable.owner".
+     * This is the keccak-256 hash of "ownable.owner" subtracted by 1.
      */
     // prettier-ignore
-    bytes32 private constant _OWNER_SLOT = 0x8a721d7331971cd5eefcd6a2b20c226462fc25662d105424a4f69c8d550cca50;
+    bytes32 private constant _OWNER_SLOT = 0x8a721d7331971cd5eefcd6a2b20c226462fc25662d105424a4f69c8d550cca49;
 
     event OwnershipTransferred(
         address indexed previousOwner,
