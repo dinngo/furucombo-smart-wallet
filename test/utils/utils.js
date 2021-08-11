@@ -79,6 +79,21 @@ function decimal6(amount) {
   return new BN(amount).mul(new BN('1000000'));
 }
 
+// Only works when one function name matches
+function getAbi(artifact, name) {
+  var abi;
+  artifact.abi.forEach((element, i) => {
+    if (element.name === name) {
+      abi = element;
+    }
+  });
+  return abi;
+}
+
+function getCallData(artifact, name, params) {
+  return web3.eth.abi.encodeFunctionCall(getAbi(artifact, name), params);
+}
+
 module.exports = {
   profileGas,
   evmSnapshot,
@@ -87,4 +102,6 @@ module.exports = {
   mulPercent,
   cUnit,
   decimal6,
+  getAbi,
+  getCallData,
 };
