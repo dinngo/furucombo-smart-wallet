@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: MIT
+pragma solidity ^0.6.0;
 
-pragma solidity >=0.6.0 <0.8.0;
-
-import "../utils/Context.sol";
+import "@openzeppelin/contracts/utils/Context.sol";
 
 /**
  * @dev Contract module which provides a basic access control mechanism, where
@@ -15,9 +14,17 @@ import "../utils/Context.sol";
  * This module is used through inheritance. It will make available the modifier
  * `onlyOwner`, which can be applied to your functions to restrict their use to
  * the owner.
+ *
+ * This is a modified version of Ownable contract to save the owner address in a
+ * specific storage slot.
  */
 abstract contract Ownable is Context {
-    address private _owner;
+    /**
+     * @dev Storage slot with the owner of the contract.
+     * This is the keccak-256 hash of "ownable.owner".
+     */
+    // prettier-ignore
+    bytes32 private constant _OWNER_SLOT = 0x8a721d7331971cd5eefcd6a2b20c226462fc25662d105424a4f69c8d550cca50;
 
     event OwnershipTransferred(
         address indexed previousOwner,
@@ -29,15 +36,19 @@ abstract contract Ownable is Context {
      */
     constructor() internal {
         address msgSender = _msgSender();
-        _owner = msgSender;
+        _setOwner(msgSender);
         emit OwnershipTransferred(address(0), msgSender);
     }
 
     /**
      * @dev Returns the address of the current owner.
      */
-    function owner() public view virtual returns (address) {
-        return _owner;
+    function owner() public view virtual returns (address _owner) {
+        bytes32 slot = _OWNER_SLOT;
+
+        assembly {
+            _owner := sload(slot)
+        }
     }
 
     /**
@@ -56,8 +67,8 @@ abstract contract Ownable is Context {
      * thereby removing any functionality that is only available to the owner.
      */
     function renounceOwnership() public virtual onlyOwner {
-        emit OwnershipTransferred(_owner, address(0));
-        _owner = address(0);
+        emit OwnershipTransferred(owner(), address(0));
+        _setOwner(address(0));
     }
 
     /**
@@ -69,7 +80,18 @@ abstract contract Ownable is Context {
             newOwner != address(0),
             "Ownable: new owner is the zero address"
         );
-        emit OwnershipTransferred(_owner, newOwner);
-        _owner = newOwner;
+        emit OwnershipTransferred(owner(), newOwner);
+        _setOwner(newOwner);
+    }
+
+    /**
+     * @dev Stores a new address in the owner slot.
+     */
+    function _setOwner(address newOwner) private {
+        bytes32 slot = _OWNER_SLOT;
+
+        assembly {
+            sstore(slot, newOwner)
+        }
     }
 }
