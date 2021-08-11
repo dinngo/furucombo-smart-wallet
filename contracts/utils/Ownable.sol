@@ -24,7 +24,7 @@ abstract contract Ownable is Context {
      * This is the keccak-256 hash of "ownable.owner" subtracted by 1.
      */
     // prettier-ignore
-    bytes32 private constant _OWNER_SLOT = 0x8a721d7331971cd5eefcd6a2b20c226462fc25662d105424a4f69c8d550cca49;
+    bytes32 private constant _OWNER_SLOT = 0x8a721d7331971cd5eefcd6a2b20c226462fc25662d105424a4f69c8d550cca4f;
 
     event OwnershipTransferred(
         address indexed previousOwner,
