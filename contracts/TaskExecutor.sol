@@ -14,15 +14,15 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
     using SafeERC20 for IERC20;
     using LibParam for bytes32;
 
-    address private immutable THIS;
+    address private immutable self;
 
     modifier delegateCallOnly() {
-        require(THIS != address(this), "Delegate call only");
+        require(self != address(this), "Delegate call only");
         _;
     }
 
     constructor() public {
-        THIS = address(this);
+        self = address(this);
     }
 
     /**
@@ -74,7 +74,7 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
                 // execute action by delegate call
                 bytes memory result = _execDelegateCall(tos[i], datas[i]);
 
-                // store return value from action to local stack
+                // store return data from action to local stack
                 index = _parseReturn(result, config, localStack, index);
             } else {
                 // Call case
@@ -89,7 +89,7 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
                 // execute action by call
                 bytes memory result = _execCall(tos[i], _data, ethValue);
 
-                // store return value from action to local stack depend on config
+                // store return data from action to local stack depend on config
                 index = _parseReturn(result, config, localStack, index);
             }
         }
@@ -110,7 +110,32 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
     ) internal pure {
         if (!config.isStatic()) {
             // If so, trim the execution data base on the configuration and stack content
-            _trim(data, config, localStack, index);
+
+            // Fetch the parameter configuration from config
+            (uint256[] memory refs, uint256[] memory params) =
+                config.getParams();
+
+            // Trim the data with the reference and parameters
+            for (uint256 i = 0; i < refs.length; i++) {
+                require(refs[i] < index, "Reference to out of localStack");
+                bytes32 ref = localStack[refs[i]];
+                uint256 offset = params[i];
+                uint256 base = PERCENTAGE_BASE;
+                assembly {
+                    let loc := add(add(data, 0x20), offset)
+                    let m := mload(loc)
+                    // Adjust the value by multiplier if a dynamic parameter is not zero
+                    if iszero(iszero(m)) {
+                        // Assert no overflow first
+                        let p := mul(m, ref)
+                        if iszero(eq(div(p, m), ref)) {
+                            revert(0, 0)
+                        } // require(p / m == ref)
+                        ref := div(p, base)
+                    }
+                    mstore(loc, ref)
+                }
+            }
         }
     }
 
@@ -138,44 +163,6 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
             index = newIndex;
         }
         return index;
-    }
-
-    /**
-     * @notice Trimming the execution data.
-     * @param data The execution data.
-     * @param config The configuration.
-     * @param localStack The stack the be referenced.
-     * @param index Current element count of localStack.
-     */
-    function _trim(
-        bytes memory data,
-        bytes32 config,
-        bytes32[256] memory localStack,
-        uint256 index
-    ) internal pure {
-        // Fetch the parameter configuration from config
-        (uint256[] memory refs, uint256[] memory params) = config.getParams();
-        // Trim the data with the reference and parameters
-        for (uint256 i = 0; i < refs.length; i++) {
-            require(refs[i] < index, "Reference to out of localStack");
-            bytes32 ref = localStack[refs[i]];
-            uint256 offset = params[i];
-            uint256 base = PERCENTAGE_BASE;
-            assembly {
-                let loc := add(add(data, 0x20), offset)
-                let m := mload(loc)
-                // Adjust the value by multiplier if a dynamic parameter is not zero
-                if iszero(iszero(m)) {
-                    // Assert no overflow first
-                    let p := mul(m, ref)
-                    if iszero(eq(div(p, m), ref)) {
-                        revert(0, 0)
-                    } // require(p / m == ref)
-                    ref := div(p, base)
-                }
-                mstore(loc, ref)
-            }
-        }
     }
 
     /**
@@ -232,7 +219,10 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
         internal
         returns (bytes memory result)
     {
-        require(_to.isContract(), "Not allow delegate call EOA");
+        require(
+            _to.isContract(),
+            "Not allow delegate call to no contract address"
+        );
         assembly {
             let succeeded := delegatecall(
                 sub(gas(), 5000),

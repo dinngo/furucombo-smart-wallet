@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.6.0;
 
 contract Foo {
@@ -5,7 +6,7 @@ contract Foo {
     uint256 public nValue;
     uint256[] public nList;
 
-    function bar() external returns (bytes32) {
+    function bar() external pure returns (bytes32) {
         return
             0x0000000000000000000000000000000000000000000000000123456789abcdef;
     }
@@ -20,7 +21,7 @@ contract Foo {
         return bValue;
     }
 
-    function bar2(bytes32 a, bytes32 b) external returns (bytes32) {
+    function bar2(bytes32 , bytes32 b) external returns (bytes32) {
         bValue = b;
         return bValue;
     }
@@ -39,7 +40,7 @@ contract Foo {
         uint256 a,
         uint256 b,
         uint256 c
-    ) external returns (uint256[] memory) {
+    ) external pure returns (uint256[] memory) {
         uint256[] memory uList = new uint256[](3);
         uList[0] = a;
         uList[1] = b;

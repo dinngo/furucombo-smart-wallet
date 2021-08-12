@@ -101,7 +101,7 @@ function getCallData(artifact, name, params) {
 async function getCreated(receipt, contract) {
   return await contract.at(receipt.logs[0].args.to);
 }
-function genCallActionData(ethValue, contract, funcName, params) {
+function getCallActionData(ethValue, contract, funcName, params) {
   return web3.eth.abi.encodeParameters(
     ['uint256', 'bytes'],
     [ethValue, getCallData(contract, funcName, params)]
@@ -118,5 +118,5 @@ module.exports = {
   getAbi,
   getCallData,
   getCreated,
-  genCallActionData,
+  getCallActionData,
 };

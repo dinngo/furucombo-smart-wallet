@@ -14,7 +14,7 @@ const {
   evmRevert,
   evmSnapshot,
   getCallData,
-  genCallActionData,
+  getCallActionData,
 } = require('./utils/utils');
 const { DS_PROXY_REGISTRY } = require('./utils/constants');
 
@@ -278,7 +278,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionEthValue = ether('0');
         const expectNValue = new BN(111);
-        const actionData = genCallActionData(actionEthValue, Foo, 'barUint1', [
+        const actionData = getCallActionData(actionEthValue, Foo, 'barUint1', [
           expectNValue,
         ]);
 
@@ -304,7 +304,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectNValue = new BN(111);
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUint1',
@@ -314,7 +314,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionBEthValue = ether('0');
         const expectBValue =
           '0x00000000000000000000000000000000000000000000000000000000000000ff';
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           expectBValue,
         ]);
 
@@ -344,7 +344,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionEthValue = ether('5');
         const expectNValue = new BN(111);
-        const actionData = genCallActionData(actionEthValue, Foo, 'barUint2', [
+        const actionData = getCallActionData(actionEthValue, Foo, 'barUint2', [
           expectNValue,
         ]);
 
@@ -396,7 +396,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('should revert: call contract revert', async function() {
         // Prepare action data
         const actionEthValue = ether('0');
-        const actionData = genCallActionData(
+        const actionData = getCallActionData(
           actionEthValue,
           Foo,
           'revertCall',
@@ -458,7 +458,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionBEthValue = ether('0');
         const expectBValue =
           '0x00000000000000000000000000000000000000000000000000000000000000ff';
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           expectBValue,
         ]);
 
@@ -487,7 +487,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAEthValue = ether('0');
         const expectBValue =
           '0x00000000000000000000000000000000000000000000000000000000000000ff';
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar1', [
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar1', [
           expectBValue,
         ]);
 
@@ -827,17 +827,13 @@ contract('TaskExecutor', function([_, user, someone]) {
     });
 
     describe('dynamic parameter by call', function() {
-      before(async function() {
-        // await send.ether(user, this.userProxy.address, ether('10'));
-      });
-
       it('replace parameter', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           ZERO_BYTES32,
         ]);
 
@@ -864,7 +860,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionAEthValue = ether('0');
         const secAmt = ether('1');
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUList',
@@ -873,7 +869,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const ratio = ether('0.7');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUint1',
@@ -906,10 +902,10 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace second parameter', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar2', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar2', [
           '0x000000000000000000000000000000000000000000000000000000000000000a',
           ZERO_BYTES32,
         ]);
@@ -936,7 +932,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace parameter by 50% of ref value', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUint',
@@ -945,7 +941,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const percent = ether('0.5');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUint1',
@@ -977,7 +973,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectNList = [new BN(300), new BN(100), new BN(75)];
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUList',
@@ -985,7 +981,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUList2',
@@ -1021,10 +1017,10 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('should revert: location count less than ref count', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           ZERO_BYTES32,
         ]);
 
@@ -1050,10 +1046,10 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('should revert: location count greater than ref count', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar2', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar2', [
           ZERO_BYTES32,
           ZERO_BYTES32,
         ]);
@@ -1080,10 +1076,10 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('should revert: ref to out of localStack', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           ZERO_BYTES32,
         ]);
 
@@ -1109,10 +1105,10 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('should revert: expected return amount not match', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           ZERO_BYTES32,
         ]);
 
@@ -1122,7 +1118,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // expect 2 32-bytes return but will only get 1
             '0x0202000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
+            '0x0300000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1138,7 +1134,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('should revert: overflow during trimming', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUint',
@@ -1146,7 +1142,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUint1',
@@ -1159,7 +1155,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [
             // expect 2 32-bytes return but will only get 1
             '0x0201000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
-            '0x0100000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
+            '0x0300000000000000000100ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[0]
           ],
           [actionAData, actionBData],
         ]);
@@ -1179,7 +1175,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar1', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar1', [
           ZERO_BYTES32,
         ]);
 
@@ -1205,7 +1201,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace parameter by call + delegate call', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         const actionBData = getCallData(FooAction, 'bar1', [
           this.foo.address,
@@ -1243,7 +1239,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const ratio = ether('0.7');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUint1',
@@ -1277,7 +1273,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionAEthValue = ether('0');
         const secAmt = ether('1');
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUList',
@@ -1315,7 +1311,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(actionBEthValue, Foo, 'bar2', [
+        const actionBData = getCallActionData(actionBEthValue, Foo, 'bar2', [
           '0x000000000000000000000000000000000000000000000000000000000000000a',
           ZERO_BYTES32,
         ]);
@@ -1342,7 +1338,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace third parameter by call + delegate call', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(actionAEthValue, Foo, 'bar', []);
+        const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
 
         // Prepare action data
         const actionBData = getCallData(FooAction, 'bar2', [
@@ -1378,7 +1374,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
         const actionBEthValue = ether('0');
         const percent = ether('0.5');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUint1',
@@ -1409,7 +1405,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace parameter by 50% of ref value by call + delegate call', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUint',
@@ -1454,7 +1450,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         ]);
 
         const actionBEthValue = ether('0');
-        const actionBData = genCallActionData(
+        const actionBData = getCallActionData(
           actionBEthValue,
           Foo,
           'barUList2',
@@ -1491,7 +1487,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectNList = [new BN(300), new BN(100), new BN(75)];
-        const actionAData = genCallActionData(
+        const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
           'barUList',
