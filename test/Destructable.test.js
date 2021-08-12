@@ -6,13 +6,13 @@ const { evmRevert, evmSnapshot, getCallData } = require('./utils/utils');
 
 const { DS_PROXY_REGISTRY } = require('./utils/constants');
 
-const Destructible = artifacts.require('DestructibleMock');
+const Destructible = artifacts.require('DestructibleActionMock');
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 
-contract('Destructible', function([owner, other]) {
+contract('DestructibleAction', function([_, owner, other]) {
   before(async function() {
-    this.destructible = await Destructible.new({ from: owner });
+    this.destructible = await Destructible.new(owner);
 
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     await this.dsRegistry.build(other);
@@ -40,7 +40,7 @@ contract('Destructible', function([owner, other]) {
     it('prevents non-owners from destroying', async function() {
       await expectRevert(
         this.destructible.destroy({ from: other }),
-        'Ownable: caller is not the owner'
+        'DestructibleAction: caller is not the owner'
       );
     });
 
@@ -50,7 +50,7 @@ contract('Destructible', function([owner, other]) {
         this.otherProxy.execute(this.destructible.address, data, {
           from: other,
         }),
-        'Ownable: caller is not the owner'
+        'DestructibleAction: caller is not the owner'
       );
     });
   });
