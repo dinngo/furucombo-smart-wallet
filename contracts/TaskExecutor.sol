@@ -108,33 +108,34 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
         bytes32[256] memory localStack,
         uint256 index
     ) internal pure {
-        if (!config.isStatic()) {
-            // If so, trim the execution data base on the configuration and stack content
+        if (config.isStatic()) {
+            // Don't need to trim parameters if static
+            return;
+        }
 
-            // Fetch the parameter configuration from config
-            (uint256[] memory refs, uint256[] memory params) =
-                config.getParams();
+        // trim the execution data base on the configuration and stack content if dynamic
+        // Fetch the parameter configuration from config
+        (uint256[] memory refs, uint256[] memory params) = config.getParams();
 
-            // Trim the data with the reference and parameters
-            for (uint256 i = 0; i < refs.length; i++) {
-                require(refs[i] < index, "Reference to out of localStack");
-                bytes32 ref = localStack[refs[i]];
-                uint256 offset = params[i];
-                uint256 base = PERCENTAGE_BASE;
-                assembly {
-                    let loc := add(add(data, 0x20), offset)
-                    let m := mload(loc)
-                    // Adjust the value by multiplier if a dynamic parameter is not zero
-                    if iszero(iszero(m)) {
-                        // Assert no overflow first
-                        let p := mul(m, ref)
-                        if iszero(eq(div(p, m), ref)) {
-                            revert(0, 0)
-                        } // require(p / m == ref)
-                        ref := div(p, base)
-                    }
-                    mstore(loc, ref)
+        // Trim the data with the reference and parameters
+        for (uint256 i = 0; i < refs.length; i++) {
+            require(refs[i] < index, "Reference to out of localStack");
+            bytes32 ref = localStack[refs[i]];
+            uint256 offset = params[i];
+            uint256 base = PERCENTAGE_BASE;
+            assembly {
+                let loc := add(add(data, 0x20), offset)
+                let m := mload(loc)
+                // Adjust the value by multiplier if a dynamic parameter is not zero
+                if iszero(iszero(m)) {
+                    // Assert no overflow first
+                    let p := mul(m, ref)
+                    if iszero(eq(div(p, m), ref)) {
+                        revert(0, 0)
+                    } // require(p / m == ref)
+                    ref := div(p, base)
                 }
+                mstore(loc, ref)
             }
         }
     }
