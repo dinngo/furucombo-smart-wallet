@@ -1,11 +1,4 @@
-const {
-  balance,
-  constants,
-  ether,
-  expectRevert,
-} = require('@openzeppelin/test-helpers');
-const { tracker } = balance;
-const { ZERO_BYTES32, MAX_UINT256 } = constants;
+const { balance, ether, expectRevert } = require('@openzeppelin/test-helpers');
 const abi = require('ethereumjs-abi');
 const { expect } = require('chai');
 const {
@@ -19,6 +12,7 @@ const {
   DAI_TOKEN,
   WETH_TOKEN,
   WETH_PROVIDER,
+  DS_PROXY_REGISTRY,
 } = require('./utils/constants');
 const {
   evmRevert,
@@ -33,8 +27,10 @@ const AFurucombo = artifacts.require('AFurucombo');
 const IToken = artifacts.require('IERC20');
 const IRegistry = artifacts.require('IRegistry');
 const HFunds = artifacts.require('HFunds');
+const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
+const IDSProxy = artifacts.require('IDSProxy');
 
-contract('AFurucombo', function([_, owner]) {
+contract('AFurucombo', function([_, owner, user]) {
   const tokenAddress = WETH_TOKEN;
   const tokenProvider = WETH_PROVIDER;
   const tokenOutAddress = DAI_TOKEN;
@@ -42,9 +38,7 @@ contract('AFurucombo', function([_, owner]) {
   before(async function() {
     // Create actions
     this.executor = await TaskExecutor.new();
-    this.aFurucombo = await AFurucombo.new(FURUCOMBO_PROXY, {
-      from: owner,
-    });
+    this.aFurucombo = await AFurucombo.new(owner, FURUCOMBO_PROXY);
 
     this.token = await IToken.at(tokenAddress);
     this.tokenOut = await IToken.at(tokenOutAddress);
@@ -62,6 +56,13 @@ contract('AFurucombo', function([_, owner]) {
     expect(
       await this.registry.isValidHandler.call(this.hFunds.address)
     ).to.be.true;
+
+    // Create user dsproxy
+    this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
+    await this.dsRegistry.build(user);
+    this.userProxy = await IDSProxy.at(
+      await this.dsRegistry.proxies.call(user)
+    );
   });
 
   beforeEach(async function() {
@@ -103,44 +104,53 @@ contract('AFurucombo', function([_, owner]) {
         ),
       ];
 
-      // Furucombo Action
-      const data = getCallData(AFurucombo, 'injectAndBatchExec', [
-        tokensIn,
-        amountsIn,
-        tokensOut,
-        tos,
-        configs,
-        datas,
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aFurucombo.address,
+        getCallData(AFurucombo, 'injectAndBatchExec', [
+          tokensIn,
+          amountsIn,
+          tokensOut,
+          tos,
+          configs,
+          datas,
+        ]),
       ]);
 
-      await this.token.transfer(this.executor.address, amountsIn[1], {
+      await this.token.transfer(this.userProxy.address, amountsIn[1], {
         from: tokenProvider,
       });
 
       // Execute
-      const receipt = await this.executor.execMock(
-        this.aFurucombo.address,
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
         data,
-        {
-          value: amountsIn[0],
-        }
+        { from: user, value: amountsIn[0] }
       );
 
       // Record after balance
-      const balanceAfter = await balance.current(this.executor.address);
-      const tokenAfter = await this.token.balanceOf.call(this.executor.address);
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const tokenAfter = await this.token.balanceOf.call(
+        this.userProxy.address
+      );
       const tokenOutAfter = await this.tokenOut.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
+      );
+      const tokenFurucomboAfter = await this.token.balanceOf.call(
+        FURUCOMBO_PROXY
       );
 
       // Verify action return
       const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
       expect(actionReturn[0]).to.be.bignumber.eq(tokenOutAfter);
 
-      // Verify task executor
+      // Verify user dsproxy
       expect(balanceAfter).to.be.zero;
       expect(tokenAfter).to.be.zero;
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify furucombo proxy
+      expect(tokenFurucomboAfter).to.be.zero;
 
       profileGas(receipt);
     });
@@ -175,31 +185,42 @@ contract('AFurucombo', function([_, owner]) {
         ),
       ];
 
-      // Furucombo Action
-      const data = getCallData(AFurucombo, 'injectAndBatchExec', [
-        tokensIn,
-        amountsIn,
-        tokensOut,
-        tos,
-        configs,
-        datas,
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aFurucombo.address,
+        getCallData(AFurucombo, 'injectAndBatchExec', [
+          tokensIn,
+          amountsIn,
+          tokensOut,
+          tos,
+          configs,
+          datas,
+        ]),
       ]);
 
-      await this.token.transfer(this.executor.address, amountsIn[0], {
+      await this.token.transfer(this.userProxy.address, amountsIn[0], {
         from: tokenProvider,
       });
 
       // Execute
-      const receipt = await this.executor.execMock(
-        this.aFurucombo.address,
-        data
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+        }
       );
 
       // Record after balance
-      const balanceAfter = await balance.current(this.executor.address);
-      const tokenAfter = await this.token.balanceOf.call(this.executor.address);
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const tokenAfter = await this.token.balanceOf.call(
+        this.userProxy.address
+      );
       const tokenOutAfter = await this.tokenOut.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
+      );
+      const tokenFurucomboAfter = await this.token.balanceOf.call(
+        FURUCOMBO_PROXY
       );
 
       // Check action return
@@ -207,10 +228,13 @@ contract('AFurucombo', function([_, owner]) {
       expect(actionReturn[0]).to.be.bignumber.eq(balanceAfter);
       expect(actionReturn[1]).to.be.bignumber.eq(tokenOutAfter);
 
-      // Check task executor
+      // Check user dsproxy
       expect(balanceAfter).to.be.bignumber.gt(ether('0'));
       expect(tokenAfter).to.be.zero;
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify furucombo proxy
+      expect(tokenFurucomboAfter).to.be.zero;
 
       profileGas(receipt);
     });
@@ -222,21 +246,28 @@ contract('AFurucombo', function([_, owner]) {
       const tos = [];
       const configs = [];
       const datas = [];
-      const data = getCallData(AFurucombo, 'injectAndBatchExec', [
-        tokensIn,
-        amountsIn,
-        tokensOut,
-        tos,
-        configs,
-        datas,
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aFurucombo.address,
+        getCallData(AFurucombo, 'injectAndBatchExec', [
+          tokensIn,
+          amountsIn,
+          tokensOut,
+          tos,
+          configs,
+          datas,
+        ]),
       ]);
 
-      await this.token.transfer(this.executor.address, amountsIn[0], {
+      await this.token.transfer(this.userProxy.address, amountsIn[0], {
         from: tokenProvider,
       });
 
       await expectRevert(
-        this.executor.execMock(this.aFurucombo.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         '_inject: Input tokens and amounts length inconsistent'
       );
     });
@@ -248,29 +279,36 @@ contract('AFurucombo', function([_, owner]) {
       const tos = [];
       const configs = [];
       const datas = [];
-      const data = getCallData(AFurucombo, 'injectAndBatchExec', [
-        tokensIn,
-        amountsIn,
-        tokensOut,
-        tos,
-        configs,
-        datas,
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aFurucombo.address,
+        getCallData(AFurucombo, 'injectAndBatchExec', [
+          tokensIn,
+          amountsIn,
+          tokensOut,
+          tos,
+          configs,
+          datas,
+        ]),
       ]);
 
-      await this.token.transfer(this.executor.address, amountsIn[0], {
+      await this.token.transfer(this.userProxy.address, amountsIn[0], {
         from: tokenProvider,
       });
 
       await expectRevert(
-        this.executor.execMock(this.aFurucombo.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         'injectAndBatchExec: Furucombo has remaining tokens'
       );
     });
   });
 
-  describe('kill', function() {
+  describe('destroy', function() {
     it('normal', async function() {
-      await this.aFurucombo.kill({ from: owner });
+      await this.aFurucombo.destroy({ from: owner });
       expect(await web3.eth.getCode(this.aFurucombo.address)).eq('0x');
     });
   });

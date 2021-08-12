@@ -8,17 +8,24 @@ import "../../externals/trevi/interfaces/IArchangel.sol";
 import "../../externals/trevi/interfaces/IAngel.sol";
 import "../../externals/trevi/interfaces/IFountain.sol";
 
-contract ATrevi is ActionBase {
+contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     IArchangel public immutable archangel;
+    address public immutable collector;
     uint256 public immutable harvestFee;
     uint256 public constant FEE_BASE = 1e4;
 
-    constructor(address _archangel, uint256 _fee) public {
+    constructor(
+        address payable _owner,
+        address _archangel,
+        address _collector,
+        uint256 _fee
+    ) public DestructibleAction(_owner) {
         require(_fee <= FEE_BASE, "ATrevi: fee rate exceeded");
         archangel = IArchangel(_archangel);
+        collector = _collector;
         harvestFee = _fee;
     }
 
@@ -66,20 +73,22 @@ contract ATrevi is ActionBase {
     }
 
     /// @notice Harvest from multiple angels and charge fee.
-    /// @param token The staking token of fountain.
     /// @param angels The angels to be harvested.
-    /// @return The output token amounts.
+    /// @param tokensOut The tokens to be returned amount.
+    /// @return The token amounts.
     function harvestAngelsAndCharge(
         address token,
         IAngel[] calldata angels,
         address[] calldata tokensOut
     ) external payable returns (uint256[] memory) {
-        IFountain fountain = _getFountain(token);
+        // Check reward tokens should be more than tokens to be returned
         _requireMsg(
             angels.length >= tokensOut.length,
             "harvestAngelsAndCharge",
             "unexpected length"
         );
+
+        IFountain fountain = _getFountain(token);
 
         // Snapshot output token amounts
         uint256[] memory amountsOut = new uint256[](tokensOut.length);
@@ -101,7 +110,7 @@ contract ATrevi is ActionBase {
             amountGrace = _getBalance(grace).sub(amountGrace);
 
             // Charge fee
-            IERC20(grace).safeTransfer(OWNER, fee(amountGrace));
+            IERC20(grace).safeTransfer(collector, fee(amountGrace));
         }
 
         // Calculate increased output token amounts

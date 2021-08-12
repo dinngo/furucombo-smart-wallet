@@ -18,6 +18,7 @@ const {
   WMATIC_PROVIDER,
   WMATIC_TOKEN,
   WETH_TOKEN,
+  DS_PROXY_REGISTRY,
 } = require('./utils/constants');
 const {
   evmRevert,
@@ -36,6 +37,8 @@ const Fountain = artifacts.require('Fountain');
 const FountainFactory = artifacts.require('FountainFactory');
 const Angel = artifacts.require('Angel');
 const AngelFactory = artifacts.require('AngelFactory');
+const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
+const IDSProxy = artifacts.require('IDSProxy');
 
 async function addAngel(
   angelFactory,
@@ -72,7 +75,7 @@ async function addAngel(
   return [angel, angelPid];
 }
 
-contract('ATrevi', function([_, owner, dummy]) {
+contract('ATrevi', function([_, owner, collector, user, dummy]) {
   const stakingTokenAddress = DAI_TOKEN;
   const stakingTokenProvider = DAI_PROVIDER;
   const rewardTokenAAddress = WMATIC_TOKEN;
@@ -80,6 +83,7 @@ contract('ATrevi', function([_, owner, dummy]) {
   const rewardTokenBAddress = SUSHI_TOKEN;
   const rewardTokenBProvider = SUSHI_PROVIDER;
   const rewardTokenCAddress = WETH_TOKEN;
+  const dummyAmount = ether('0.01');
 
   before(async function() {
     const defaultFlashloanFee = new BN(10);
@@ -123,6 +127,7 @@ contract('ATrevi', function([_, owner, dummy]) {
     const gracePerSecond = ether('0.01');
     const graceDuration = duration.days(1);
 
+    // Create rewardA angel
     [this.angelA, this.angelAPid] = await addAngel(
       this.angelFactory,
       this.stakingToken,
@@ -132,6 +137,17 @@ contract('ATrevi', function([_, owner, dummy]) {
       graceDuration
     );
 
+    // Create the second rewardA angel
+    [this.angelA2, this.angelAPid] = await addAngel(
+      this.angelFactory,
+      this.stakingToken,
+      this.rewardTokenA,
+      allocPoint,
+      gracePerSecond,
+      graceDuration
+    );
+
+    // Create rewardB angel
     [this.angelB, this.angelBPid] = await addAngel(
       this.angelFactory,
       this.stakingToken,
@@ -150,9 +166,19 @@ contract('ATrevi', function([_, owner, dummy]) {
     // Create actions
     this.fee = new BN('2000'); // 20% harvest fee
     this.executor = await TaskExecutor.new();
-    this.aTrevi = await ATrevi.new(this.archangel.address, this.fee, {
-      from: owner,
-    });
+    this.aTrevi = await ATrevi.new(
+      owner,
+      this.archangel.address,
+      collector,
+      this.fee
+    );
+
+    // Create user dsproxy
+    this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
+    await this.dsRegistry.build(user);
+    this.userProxy = await IDSProxy.at(
+      await this.dsRegistry.proxies.call(user)
+    );
   });
 
   beforeEach(async function() {
@@ -163,29 +189,47 @@ contract('ATrevi', function([_, owner, dummy]) {
     await evmRevert(id);
   });
 
+  describe('collector', function() {
+    it('has an collector', async function() {
+      expect(await this.aTrevi.collector()).to.equal(collector);
+    });
+  });
+
   describe('deposit', function() {
     it('normal', async function() {
       const stakingAmount = ether('10');
-      const data = getCallData(ATrevi, 'deposit', [
-        this.stakingToken.address,
-        stakingAmount,
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'deposit', [
+          this.stakingToken.address,
+          stakingAmount,
+        ]),
       ]);
 
-      // Send token to executor
-      await this.stakingToken.transfer(this.executor.address, stakingAmount, {
+      // Send token to user dsproxy
+      await this.stakingToken.transfer(this.userProxy.address, stakingAmount, {
         from: stakingTokenProvider,
       });
 
       // Execute
-      const receipt = await this.executor.execMock(this.aTrevi.address, data);
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
 
       // Record after balance
-      const balanceAfter = await balance.current(this.executor.address);
+      const balanceAfter = await balance.current(this.userProxy.address);
       const tokenAfter = await this.stakingToken.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
       );
       const fountainAfter = await this.fountain.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
       );
 
       // Check action return
@@ -193,7 +237,7 @@ contract('ATrevi', function([_, owner, dummy]) {
       expect(actionReturn).to.be.bignumber.eq(fountainAfter);
 
       // Check task executor
-      expect(balanceAfter).to.be.zero;
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
       expect(tokenAfter).to.be.zero;
       expect(fountainAfter).to.be.bignumber.eq(stakingAmount);
 
@@ -203,26 +247,40 @@ contract('ATrevi', function([_, owner, dummy]) {
     it('should revert: insufficient staking token', async function() {
       const extra = ether('1');
       const stakingAmount = ether('10');
-      const data = getCallData(ATrevi, 'deposit', [
-        this.stakingToken.address,
-        stakingAmount.add(extra),
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'deposit', [
+          this.stakingToken.address,
+          stakingAmount.add(extra),
+        ]),
       ]);
 
-      // Send token to executor
-      await this.stakingToken.transfer(this.executor.address, stakingAmount, {
+      // Send token to user dsproxy
+      await this.stakingToken.transfer(this.userProxy.address, stakingAmount, {
         from: stakingTokenProvider,
       });
 
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         'deposit: ERC20: transfer amount exceeds balance'
       );
     });
 
     it('should revert: fountain not found', async function() {
-      const data = getCallData(ATrevi, 'deposit', [dummy, 0]);
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'deposit', [dummy, 0]),
+      ]);
+
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         '_getFountain: fountain not found'
       );
     });
@@ -232,43 +290,55 @@ contract('ATrevi', function([_, owner, dummy]) {
     const stakingAmount = ether('10');
 
     beforeEach(async function() {
-      // Send ftn token to executor
+      // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
         from: stakingTokenProvider,
       });
-      await this.fountain.depositTo(stakingAmount, this.executor.address, {
+      await this.fountain.depositTo(stakingAmount, this.userProxy.address, {
         from: stakingTokenProvider,
       });
       expect(
-        await this.fountain.balanceOf(this.executor.address)
+        await this.fountain.balanceOf(this.userProxy.address)
       ).to.be.bignumber.eq(stakingAmount);
     });
 
     it('normal', async function() {
       const withdrawAmount = stakingAmount;
-      const data = getCallData(ATrevi, 'withdraw', [
-        this.stakingToken.address,
-        withdrawAmount,
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'withdraw', [
+          this.stakingToken.address,
+          withdrawAmount,
+        ]),
       ]);
 
       // Execute
-      const receipt = await this.executor.execMock(this.aTrevi.address, data);
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
 
       // Record after balance
-      const balanceAfter = await balance.current(this.executor.address);
+      const balanceAfter = await balance.current(this.userProxy.address);
       const tokenAfter = await this.stakingToken.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
       );
       const fountainAfter = await this.fountain.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
       );
 
       // Verify action return
       const actionReturn = getActionReturn(receipt, ['uint256'])[0];
       expect(actionReturn).to.be.bignumber.eq(tokenAfter);
 
-      // Verify task executor
-      expect(balanceAfter).to.be.zero;
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
       expect(tokenAfter).to.be.bignumber.eq(withdrawAmount);
       expect(fountainAfter).to.be.zero;
 
@@ -278,9 +348,14 @@ contract('ATrevi', function([_, owner, dummy]) {
     it('should revert: insufficient ftn token', async function() {
       const extra = ether('1');
       const withdrawAmount = stakingAmount.add(extra);
-      const data = getCallData(ATrevi, 'withdraw', [
-        this.stakingToken.address,
-        withdrawAmount,
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'withdraw', [
+          this.stakingToken.address,
+          withdrawAmount,
+        ]),
       ]);
 
       // Send extra token to fountain
@@ -289,15 +364,24 @@ contract('ATrevi', function([_, owner, dummy]) {
       });
 
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         'withdraw: ERC20: burn amount exceeds balance'
       );
     });
 
     it('should revert: fountain not found', async function() {
-      const data = getCallData(ATrevi, 'withdraw', [dummy, 0]);
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'withdraw', [dummy, 0]),
+      ]);
+
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         '_getFountain: fountain not found'
       );
     });
@@ -307,62 +391,96 @@ contract('ATrevi', function([_, owner, dummy]) {
     const stakingAmount = ether('10');
 
     beforeEach(async function() {
-      // Send ftn token to executor
+      // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
         from: stakingTokenProvider,
       });
-      await this.fountain.depositTo(stakingAmount, this.executor.address, {
+      await this.fountain.depositTo(stakingAmount, this.userProxy.address, {
         from: stakingTokenProvider,
       });
       expect(
-        await this.fountain.balanceOf(this.executor.address)
+        await this.fountain.balanceOf(this.userProxy.address)
       ).to.be.bignumber.eq(stakingAmount);
 
       // Join angel A
-      await this.executor.callMock(
-        this.fountain.address,
-        abi.simpleEncode('joinAngel(address)', this.angelA.address)
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelA.address),
+        ]),
+        {
+          from: user,
+        }
       );
     });
 
     it('normal', async function() {
+      // Join angel B
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelB.address),
+        ]),
+        {
+          from: user,
+        }
+      );
+
       await increase(duration.hours(1));
 
-      const data = getCallData(ATrevi, 'harvestAngelsAndCharge', [
-        this.stakingToken.address,
-        [this.angelA.address],
-        [this.rewardTokenA.address],
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [
+          this.stakingToken.address,
+          [this.angelA.address, this.angelB.address],
+          [this.rewardTokenA.address, this.rewardTokenB.address],
+        ]),
       ]);
 
       // Execute
-      const receipt = await this.executor.execMock(this.aTrevi.address, data);
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
 
       // Record after balance
-      const balanceAfter = await balance.current(this.executor.address);
-      const tokenAfter = await this.stakingToken.balanceOf.call(
-        this.executor.address
-      );
-      const fountainAfter = await this.fountain.balanceOf.call(
-        this.executor.address
-      );
+      const balanceAfter = await balance.current(this.userProxy.address);
       const rewardAAfter = await this.rewardTokenA.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
+      );
+      const rewardBAfter = await this.rewardTokenB.balanceOf.call(
+        this.userProxy.address
       );
 
       // Verify action return
       const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
       expect(actionReturn[0]).to.be.bignumber.eq(rewardAAfter);
+      expect(actionReturn[1]).to.be.bignumber.eq(rewardBAfter);
+      expect(actionReturn.length).to.equal(2);
 
-      // Verify task executor
-      expect(balanceAfter).to.be.zero;
-      expect(fountainAfter).to.be.bignumber.eq(stakingAmount);
-      expect(tokenAfter).to.be.zero;
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
       expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
+      expect(rewardBAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify fee
       const baseFee = new BN('10000');
-      expect(await this.rewardTokenA.balanceOf.call(owner)).to.be.bignumber.eq(
-        new BN(actionReturn[0]).mul(this.fee).div(baseFee.sub(this.fee))
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.eq(
+        rewardAAfter.mul(this.fee).div(baseFee.sub(this.fee))
+      );
+      expect(
+        await this.rewardTokenB.balanceOf.call(collector)
+      ).to.be.bignumber.eq(
+        rewardBAfter.mul(this.fee).div(baseFee.sub(this.fee))
       );
 
       profileGas(receipt);
@@ -370,99 +488,206 @@ contract('ATrevi', function([_, owner, dummy]) {
 
     it('partial output tokens', async function() {
       // Join angel B
-      await this.executor.callMock(
-        this.fountain.address,
-        abi.simpleEncode('joinAngel(address)', this.angelB.address)
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelB.address),
+        ]),
+        {
+          from: user,
+        }
       );
+
       await increase(duration.hours(1));
 
-      const data = getCallData(ATrevi, 'harvestAngelsAndCharge', [
-        this.stakingToken.address,
-        [this.angelA.address, this.angelB.address],
-        [this.rewardTokenA.address], // partial output tokens
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [
+          this.stakingToken.address,
+          [this.angelA.address, this.angelB.address],
+          [this.rewardTokenA.address], // partial output tokens
+        ]),
       ]);
 
       // Execute
-      const receipt = await this.executor.execMock(this.aTrevi.address, data);
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
 
       // Record after balance
-      const balanceAfter = await balance.current(this.executor.address);
-      const tokenAfter = await this.stakingToken.balanceOf.call(
-        this.executor.address
-      );
-      const fountainAfter = await this.fountain.balanceOf.call(
-        this.executor.address
-      );
+      const balanceAfter = await balance.current(this.userProxy.address);
       const rewardAAfter = await this.rewardTokenA.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
       );
       const rewardBAfter = await this.rewardTokenB.balanceOf.call(
-        this.executor.address
+        this.userProxy.address
       );
 
       // Verify action return
       const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
       expect(actionReturn[0]).to.be.bignumber.eq(rewardAAfter);
+      expect(actionReturn.length).to.equal(1);
 
-      // Verify task executor
-      expect(balanceAfter).to.be.zero;
-      expect(fountainAfter).to.be.bignumber.eq(stakingAmount);
-      expect(tokenAfter).to.be.zero;
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
       expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
       expect(rewardBAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify fee
       const baseFee = new BN('10000');
-      expect(await this.rewardTokenA.balanceOf.call(owner)).to.be.bignumber.eq(
-        new BN(actionReturn[0]).mul(this.fee).div(baseFee.sub(this.fee))
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.eq(
+        rewardAAfter.mul(this.fee).div(baseFee.sub(this.fee))
       );
-      expect(await this.rewardTokenB.balanceOf.call(owner)).to.be.bignumber.gt(
-        ether('0')
+      expect(
+        await this.rewardTokenB.balanceOf.call(collector)
+      ).to.be.bignumber.eq(
+        rewardBAfter.mul(this.fee).div(baseFee.sub(this.fee))
+      );
+
+      profileGas(receipt);
+    });
+
+    it('duplicate reward tokens', async function() {
+      // Join angel A2
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelA2.address),
+        ]),
+        {
+          from: user,
+        }
+      );
+
+      await increase(duration.hours(1));
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [
+          this.stakingToken.address,
+          [this.angelA.address, this.angelA2.address],
+          [this.rewardTokenA.address], // partial output tokens
+        ]),
+      ]);
+
+      // Execute
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
+
+      // Record after balance
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const rewardAAfter = await this.rewardTokenA.balanceOf.call(
+        this.userProxy.address
+      );
+
+      // Verify action return
+      const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
+      expect(actionReturn[0]).to.be.bignumber.eq(rewardAAfter);
+      expect(actionReturn.length).to.equal(1);
+
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
+      expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify fee
+      const baseFee = new BN('10000');
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.eq(
+        rewardAAfter.mul(this.fee).div(baseFee.sub(this.fee))
       );
 
       profileGas(receipt);
     });
 
     it('should revert: fountain not found', async function() {
-      const data = getCallData(ATrevi, 'harvestAngelsAndCharge', [
-        dummy,
-        [],
-        [],
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [dummy, [], []]),
       ]);
+
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        '_getFountain: fountain not found'
+      );
+    });
+
+    it('should revert: fountain not found', async function() {
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [dummy, [], []]),
+      ]);
+
+      await expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         '_getFountain: fountain not found'
       );
     });
 
     it('should revert: unexpected length', async function() {
-      const data = getCallData(ATrevi, 'harvestAngelsAndCharge', [
-        this.stakingToken.address,
-        [],
-        [dummy],
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [
+          this.stakingToken.address,
+          [],
+          [dummy],
+        ]),
       ]);
+
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         'harvestAngelsAndCharge: unexpected length'
       );
     });
 
     it('should revert: angel not found', async function() {
-      const data = getCallData(ATrevi, 'harvestAngelsAndCharge', [
-        this.stakingToken.address,
-        [this.angelC.address],
-        [],
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngelsAndCharge', [
+          this.stakingToken.address,
+          [this.angelC.address],
+          [],
+        ]),
       ]);
       await expectRevert(
-        this.executor.execMock(this.aTrevi.address, data),
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
         'harvestAngelsAndCharge: _harvestAngel: not added by angel'
       );
     });
   });
 
-  describe('kill', function() {
+  describe('destroy', function() {
     it('normal', async function() {
-      await this.aTrevi.kill({ from: owner });
+      await this.aTrevi.destroy({ from: owner });
       expect(await web3.eth.getCode(this.aTrevi.address)).eq('0x');
     });
   });

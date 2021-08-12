@@ -5,7 +5,7 @@ pragma experimental ABIEncoderV2;
 
 import "./Angel.sol";
 import "./interfaces/IAngelFactory.sol";
-import "./utils/ErrorMsg.sol";
+import "../../utils/ErrorMsg.sol";
 
 /// @title The factory of angel.
 contract AngelFactory is ErrorMsg {

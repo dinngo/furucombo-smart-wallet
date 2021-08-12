@@ -5,7 +5,7 @@ pragma solidity 0.6.12;
 import "./Fountain.sol";
 import "./interfaces/IArchangel.sol";
 import "./interfaces/IFountainFactory.sol";
-import "./utils/ErrorMsg.sol";
+import "../../utils/ErrorMsg.sol";
 
 /// @title The factory of Fountain
 contract FountainFactory is ErrorMsg {
@@ -46,8 +46,12 @@ contract FountainFactory is ErrorMsg {
         );
         string memory name = _concat("Fountain ", token.name());
         string memory symbol = _concat("FTN-", token.symbol());
-        Fountain fountain =
-            new Fountain(token, name, symbol, archangel.defaultFlashLoanFee());
+        Fountain fountain = new Fountain(
+            token,
+            name,
+            symbol,
+            archangel.defaultFlashLoanFee()
+        );
         _fountains[token] = fountain;
         _stakings[fountain] = token;
 

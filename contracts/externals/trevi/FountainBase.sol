@@ -11,7 +11,7 @@ import "./interfaces/IArchangel.sol";
 import "./interfaces/IAngel.sol";
 import "./interfaces/IFountain.sol";
 import "./interfaces/IFountainFactory.sol";
-import "./utils/ErrorMsg.sol";
+import "../../utils/ErrorMsg.sol";
 import "./FountainToken.sol";
 
 /// @title Staking vault of lpTokens

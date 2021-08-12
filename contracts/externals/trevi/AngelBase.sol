@@ -14,7 +14,7 @@ import "./interfaces/IMasterChef.sol";
 import "./interfaces/IAngelFactory.sol";
 import "./interfaces/IArchangel.sol";
 import "./interfaces/IFountain.sol";
-import "./utils/ErrorMsg.sol";
+import "../../utils/ErrorMsg.sol";
 
 /// @notice Angel is a forked version of MiniChefV2 from SushiSwap with
 /// minimal modifications to interact with fountain in Trevi. The staking
@@ -167,8 +167,9 @@ contract AngelBase is BoringOwnable, BoringBatchable, ErrorMsg {
 
         ////////////////////////// New
         // Update pid in fountain
-        IFountain fountain =
-            IFountain(archangel.getFountain(address(_lpToken)));
+        IFountain fountain = IFountain(
+            archangel.getFountain(address(_lpToken))
+        );
         fountain.setPoolId(pid);
     }
 
@@ -290,8 +291,9 @@ contract AngelBase is BoringOwnable, BoringBatchable, ErrorMsg {
         ////////////////////////// New
         // uint256 lpSupply = lpToken[_pid].balanceOf(address(this));
         // Need to get the lpSupply from fountain
-        IFountain fountain =
-            IFountain(archangel.getFountain(address(lpToken[_pid])));
+        IFountain fountain = IFountain(
+            archangel.getFountain(address(lpToken[_pid]))
+        );
         (, uint256 lpSupply) = fountain.angelInfo(address(this));
         uint256 _lastTimeRewardApplicable = lastTimeRewardApplicable();
         if (
@@ -300,17 +302,16 @@ contract AngelBase is BoringOwnable, BoringBatchable, ErrorMsg {
             _lastTimeRewardApplicable > pool.lastRewardTime
         ) {
             uint256 time = _lastTimeRewardApplicable.sub(pool.lastRewardTime);
-            uint256 graceReward =
-                time.mul(gracePerSecond).mul(pool.allocPoint) / totalAllocPoint;
+            uint256 graceReward = time.mul(gracePerSecond).mul(
+                pool.allocPoint
+            ) / totalAllocPoint;
             accGracePerShare = accGracePerShare.add(
                 graceReward.mul(ACC_GRACE_PRECISION) / lpSupply
             );
         }
         pending = int256(
             user.amount.mul(accGracePerShare) / ACC_GRACE_PRECISION
-        )
-            .sub(user.rewardDebt)
-            .toUInt256();
+        ).sub(user.rewardDebt).toUInt256();
     }
 
     /// @notice Update reward variables for all pools with non-zero allocPoint.
@@ -351,8 +352,9 @@ contract AngelBase is BoringOwnable, BoringBatchable, ErrorMsg {
             ////////////////////////// New
             // uint256 lpSupply = lpToken[pid].balanceOf(address(this));
             // Need to get the lpSupply from fountain
-            IFountain fountain =
-                IFountain(archangel.getFountain(address(lpToken[pid])));
+            IFountain fountain = IFountain(
+                archangel.getFountain(address(lpToken[pid]))
+            );
             (, uint256 lpSupply) = fountain.angelInfo(address(this));
             uint256 _lastTimeRewardApplicable = lastTimeRewardApplicable();
             // Only accumulate reward before end time
@@ -361,11 +363,12 @@ contract AngelBase is BoringOwnable, BoringBatchable, ErrorMsg {
                 pool.allocPoint > 0 &&
                 _lastTimeRewardApplicable > pool.lastRewardTime
             ) {
-                uint256 time =
-                    _lastTimeRewardApplicable.sub(pool.lastRewardTime);
-                uint256 graceReward =
-                    time.mul(gracePerSecond).mul(pool.allocPoint) /
-                        totalAllocPoint;
+                uint256 time = _lastTimeRewardApplicable.sub(
+                    pool.lastRewardTime
+                );
+                uint256 graceReward = time.mul(gracePerSecond).mul(
+                    pool.allocPoint
+                ) / totalAllocPoint;
                 pool.accGracePerShare = pool.accGracePerShare.add(
                     (graceReward.mul(ACC_GRACE_PRECISION) / lpSupply).to128()
                 );
@@ -464,12 +467,12 @@ contract AngelBase is BoringOwnable, BoringBatchable, ErrorMsg {
         // Delegate by fountain
         // UserInfo storage user = userInfo[pid][msg.sender];
         UserInfo storage user = userInfo[pid][from];
-        int256 accumulatedGrace =
-            int256(
-                user.amount.mul(pool.accGracePerShare) / ACC_GRACE_PRECISION
-            );
-        uint256 _pendingGrace =
-            accumulatedGrace.sub(user.rewardDebt).toUInt256();
+        int256 accumulatedGrace = int256(
+            user.amount.mul(pool.accGracePerShare) / ACC_GRACE_PRECISION
+        );
+        uint256 _pendingGrace = accumulatedGrace
+            .sub(user.rewardDebt)
+            .toUInt256();
 
         // Effects
         user.rewardDebt = accumulatedGrace;

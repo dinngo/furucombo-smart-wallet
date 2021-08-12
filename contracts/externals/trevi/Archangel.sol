@@ -9,7 +9,7 @@ import "./interfaces/IArchangel.sol";
 import "./interfaces/IFlashLender.sol";
 import "./AngelFactory.sol";
 import "./FountainFactory.sol";
-import "./utils/ErrorMsg.sol";
+import "../../utils/ErrorMsg.sol";
 
 /// @title Staking system manager
 contract Archangel is Ownable, ErrorMsg {

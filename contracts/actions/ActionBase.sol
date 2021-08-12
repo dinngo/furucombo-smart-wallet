@@ -3,24 +3,14 @@ pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IERC20Usdt.sol";
+import "../utils/DestructibleAction.sol";
 import "../utils/ErrorMsg.sol";
 
-abstract contract ActionBase is ErrorMsg {
+abstract contract ActionBase {
     using SafeERC20 for IERC20;
 
     // prettier-ignore
     address public constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
-    address public immutable OWNER;
-
-    constructor() public {
-        OWNER = msg.sender;
-    }
-
-    /// @notice Destroy the contract.
-    function kill() external {
-        require(msg.sender == OWNER, "not owner");
-        selfdestruct(msg.sender);
-    }
 
     function _getBalance(address token) internal view returns (uint256) {
         return _getBalanceWithAmount(token, type(uint256).max);

@@ -7,26 +7,17 @@ import "@openzeppelin/contracts/math/SafeMath.sol";
 import "./IFurucombo.sol";
 import "../ActionBase.sol";
 
-contract AFurucombo is ActionBase {
+contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
     address payable public immutable proxy;
 
-    constructor(address payable _proxy) public {
+    constructor(address payable _owner, address payable _proxy)
+        public
+        DestructibleAction(_owner)
+    {
         proxy = _proxy;
-    }
-
-    /// @notice Execute combo.
-    /// @param tos The handlers of combo.
-    /// @param configs The configurations of executing cubes.
-    /// @param datas The combo datas.
-    function batchExec(
-        address[] calldata tos,
-        bytes32[] calldata configs,
-        bytes[] memory datas
-    ) public payable {
-        IFurucombo(proxy).batchExec(tos, configs, datas);
     }
 
     /// @notice Inject tokens and execute combo.
@@ -53,7 +44,13 @@ contract AFurucombo is ActionBase {
 
         // Inject and execute combo
         _inject(tokensIn, amountsIn);
-        batchExec(tos, configs, datas);
+        try IFurucombo(proxy).batchExec(tos, configs, datas) {} catch Error(
+            string memory reason
+        ) {
+            _revertMsg("injectAndBatchExec", reason);
+        } catch {
+            _revertMsg("injectAndBatchExec");
+        }
 
         // Check no remaining input tokens to ensure updateTokens was called
         for (uint256 i = 0; i < tokensIn.length; i++) {
