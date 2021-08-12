@@ -5,15 +5,15 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/ITaskExecutor.sol";
-import "./Config.sol";
 import "./lib/LibParam.sol";
+import "./utils/Destructible.sol";
+import "./Config.sol";
 
-contract TaskExecutor is ITaskExecutor, Config {
+contract TaskExecutor is ITaskExecutor, Config, Destructible {
     using Address for address;
     using SafeERC20 for IERC20;
     using LibParam for bytes32;
 
-    address public immutable owner;
     address private immutable THIS;
 
     modifier delegateCallOnly() {
@@ -22,7 +22,6 @@ contract TaskExecutor is ITaskExecutor, Config {
     }
 
     constructor() public {
-        owner = msg.sender;
         THIS = address(this);
     }
 
@@ -274,13 +273,5 @@ contract TaskExecutor is ITaskExecutor, Config {
         (bool success, bytes memory result) = _to.call{value: _value}(_data);
         require(success, "Call external contract fail");
         return result;
-    }
-
-    /**
-     * @notice /// destroy the contract and reclaim the leftover funds.
-     */
-    function kill() external {
-        require(msg.sender == owner, "Invalid owner");
-        selfdestruct(msg.sender);
     }
 }

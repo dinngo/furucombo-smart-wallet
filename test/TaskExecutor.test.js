@@ -1532,8 +1532,8 @@ contract('TaskExecutor', function([_, user, someone]) {
   });
 
   describe('kill', function() {
-    it('kill by owner', async function() {
-      await this.taskExecutor.kill({
+    it('destroy by owner', async function() {
+      await this.taskExecutor.destroy({
         from: _,
       });
 
@@ -1543,10 +1543,10 @@ contract('TaskExecutor', function([_, user, someone]) {
 
     it('should revert: kill by invalid owner', async function() {
       await expectRevert(
-        this.taskExecutor.kill({
+        this.taskExecutor.destroy({
           from: user,
         }),
-        'Invalid owner'
+        'Ownable: caller is not the owner'
       );
     });
   });
