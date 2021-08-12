@@ -10,9 +10,9 @@ const Destructible = artifacts.require('DestructibleActionMock');
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 
-contract('Destructible', function([owner, other]) {
+contract('DestructibleAction', function([_, owner, other]) {
   before(async function() {
-    this.destructible = await Destructible.new({ from: owner });
+    this.destructible = await Destructible.new(owner);
 
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     await this.dsRegistry.build(other);
