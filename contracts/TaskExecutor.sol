@@ -6,10 +6,10 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/ITaskExecutor.sol";
 import "./lib/LibParam.sol";
-import "./utils/Destructible.sol";
+import "./utils/DestructibleAction.sol";
 import "./Config.sol";
 
-contract TaskExecutor is ITaskExecutor, Config, Destructible {
+contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
     using Address for address;
     using SafeERC20 for IERC20;
     using LibParam for bytes32;
@@ -21,7 +21,7 @@ contract TaskExecutor is ITaskExecutor, Config, Destructible {
         _;
     }
 
-    constructor() public {
+    constructor(address payable _owner) public DestructibleAction(_owner) {
         self = address(this);
     }
 

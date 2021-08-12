@@ -31,7 +31,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
   before(async function() {
     this.dsProxyRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    this.taskExecutor = await TaskExecutor.new();
+    this.taskExecutor = await TaskExecutor.new(_);
     this.foo = await Foo.new();
     this.fooAction = await FooAction.new();
 
@@ -1542,7 +1542,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         this.taskExecutor.destroy({
           from: user,
         }),
-        'Ownable: caller is not the owner'
+        'DestructibleAction: caller is not the owner'
       );
     });
   });
