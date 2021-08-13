@@ -1,7 +1,8 @@
+// SPDX-License-Identifier: MIT
 pragma solidity 0.6.12;
 
-import "../../external/dapphub/DSGuard.sol";
-import "../../interface/IDSProxy.sol";
+import "../../externals/dapphub/DSGuard.sol";
+import "../../interfaces/IDSProxy.sol";
 
 contract AAuth {
     /// bytes4(keccak256("execute(address,bytes)"))
