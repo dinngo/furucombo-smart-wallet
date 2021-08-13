@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: MIT
 // guard.sol -- simple whitelist implementation of DSAuthority
 
 // Copyright (C) 2017  DappHub, LLC
