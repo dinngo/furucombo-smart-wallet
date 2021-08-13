@@ -4,6 +4,8 @@ pragma solidity ^0.6.0;
 library LibParam {
     bytes32 private constant STATIC_MASK =
         0x0100000000000000000000000000000000000000000000000000000000000000;
+    bytes32 private constant CALLTYPE_MASK =
+        0x0200000000000000000000000000000000000000000000000000000000000000;
     bytes32 private constant PARAMS_MASK =
         0x0000000000000000000000000000000000000000000000000000000000000001;
     bytes32 private constant REFS_MASK =
@@ -23,6 +25,10 @@ library LibParam {
     function isReferenced(bytes32 conf) internal pure returns (bool) {
         if (getReturnNum(conf) == 0) return false;
         else return true;
+    }
+
+    function isDelegateCall(bytes32 conf) internal pure returns (bool) {
+        return (conf & CALLTYPE_MASK == 0);
     }
 
     function getReturnNum(bytes32 conf) internal pure returns (uint256 num) {

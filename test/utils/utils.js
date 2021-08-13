@@ -94,6 +94,15 @@ function getCallData(artifact, name, params) {
   return web3.eth.abi.encodeFunctionCall(getAbi(artifact, name), params);
 }
 
+async function getCreated(receipt, contract) {
+  return await contract.at(receipt.logs[0].args.to);
+}
+function getCallActionData(ethValue, contract, funcName, params) {
+  return web3.eth.abi.encodeParameters(
+    ['uint256', 'bytes'],
+    [ethValue, getCallData(contract, funcName, params)]
+  );
+}
 module.exports = {
   profileGas,
   evmSnapshot,
@@ -104,4 +113,6 @@ module.exports = {
   decimal6,
   getAbi,
   getCallData,
+  getCreated,
+  getCallActionData,
 };
