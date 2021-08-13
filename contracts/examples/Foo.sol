@@ -57,6 +57,6 @@ contract Foo {
 
     function revertCall(
     ) external pure {
-        revert("revert");
+        revert("revertCall");
     }
 }

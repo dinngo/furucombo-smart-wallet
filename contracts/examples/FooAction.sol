@@ -70,6 +70,6 @@ contract FooAction  {
 
     function revertCall(
     ) external payable {
-        revert("revert");
+        revert("revertCall");
     }
 }

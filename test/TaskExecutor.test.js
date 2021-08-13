@@ -156,11 +156,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Not allow delegate call to non-existing contract'
         );
       });
 
@@ -168,24 +169,21 @@ contract('TaskExecutor', function([_, user, someone]) {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
-        const actionData = getCallData(FooAction, 'barUint2', [
-          this.foo.address,
-          expectNValue,
-          value,
-        ]);
+        const actionData = getCallData(FooAction, 'revertCall', []);
 
         // Prepare task data and execute
         const data = getCallData(TaskExecutor, 'batchExec', [
-          [ZERO_ADDRESS],
+          [this.fooAction.address],
           [ZERO_BYTES32],
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'revertCall'
         );
       });
 
@@ -239,11 +237,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Tos and datas length inconsistent'
         );
       });
 
@@ -264,11 +263,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData, actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Tos and configs length inconsistent'
         );
       });
     });
@@ -412,11 +412,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'revertCall'
         );
       });
 
@@ -707,11 +708,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Location count less than ref count'
         );
       });
 
@@ -734,11 +736,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Location count exceeds ref count'
         );
       });
 
@@ -761,11 +764,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Reference to out of localStack'
         );
       });
 
@@ -788,11 +792,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Return num and parsed return num not matched'
         );
       });
 
@@ -1035,11 +1040,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Location count less than ref count'
         );
       });
 
@@ -1065,11 +1071,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Location count exceeds ref count'
         );
       });
 
@@ -1094,11 +1101,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Reference to out of localStack'
         );
       });
 
@@ -1123,11 +1131,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionAData, actionBData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Return num and parsed return num not matched'
         );
       });
 

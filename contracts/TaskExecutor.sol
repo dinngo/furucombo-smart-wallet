@@ -5,8 +5,8 @@ pragma experimental ABIEncoderV2;
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/ITaskExecutor.sol";
-import "./lib/LibParam.sol";
 import "./utils/DestructibleAction.sol";
+import "./lib/LibParam.sol";
 import "./Config.sol";
 
 contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
@@ -66,30 +66,30 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
             bytes32 config = configs[i];
 
             if (config.isDelegateCall()) {
-                // delegateCall case
+                // Delegate call case
 
-                // trim params from local stack depend on config
+                // Trim params from local stack depend on config
                 _trimParams(datas[i], config, localStack, index);
 
-                // execute action by delegate call
+                // Execute action by delegate call
                 bytes memory result = _execDelegateCall(tos[i], datas[i]);
 
-                // store return data from action to local stack
+                // Store return data from action to local stack
                 index = _parseReturn(result, config, localStack, index);
             } else {
-                // Call case
+                // Function Call case
 
-                // decode eth value from data
+                // Decode eth value from data
                 (uint256 ethValue, bytes memory _data) =
                     _decodeEthValue(datas[i]);
 
-                // trim params from local stack depend on config
+                // Trim params from local stack depend on config
                 _trimParams(_data, config, localStack, index);
 
-                // execute action by call
+                // Execute action by call
                 bytes memory result = _execCall(tos[i], _data, ethValue);
 
-                // store return data from action to local stack depend on config
+                // Store return data from action to local stack depend on config
                 index = _parseReturn(result, config, localStack, index);
             }
         }
@@ -113,7 +113,7 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
             return;
         }
 
-        // trim the execution data base on the configuration and stack content if dynamic
+        // Trim the execution data base on the configuration and stack content if dynamic
         // Fetch the parameter configuration from config
         (uint256[] memory refs, uint256[] memory params) = config.getParams();
 
@@ -218,36 +218,22 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
      */
     function _execDelegateCall(address _to, bytes memory _data)
         internal
-        returns (bytes memory result)
+        returns (bytes memory)
     {
         require(
             _to.isContract(),
-            "Not allow delegate call to no contract address"
+            "Not allow delegate call to non-existing contract"
         );
-        assembly {
-            let succeeded := delegatecall(
-                sub(gas(), 5000),
-                _to,
-                add(_data, 0x20),
-                mload(_data),
-                0,
-                0
-            )
-            let size := returndatasize()
 
-            result := mload(0x40)
-            mstore(
-                0x40,
-                add(result, and(add(add(size, 0x20), 0x1f), not(0x1f)))
-            )
-            mstore(result, size)
-            returndatacopy(add(result, 0x20), 0, size)
-
-            switch iszero(succeeded)
-                case 1 {
-                    revert(add(result, 0x20), size)
-                }
+        (bool success, bytes memory result) = _to.delegatecall(_data);
+        if (!success) {
+            if (result.length < 68) revert();
+            assembly {
+                result := add(result, 0x04)
+            }
+            revert(abi.decode(result, (string)));
         }
+        return result;
     }
 
     /**
@@ -262,7 +248,7 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
         uint256 _value
     ) internal returns (bytes memory) {
         (bool success, bytes memory result) = _to.call{value: _value}(_data);
-        require(success, "Call external contract fail");
+        require(success, string(result));
         return result;
     }
 }

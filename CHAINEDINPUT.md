@@ -25,8 +25,8 @@ config is a bytes32 data represented by hex.
 - Example:
   - `0x00` => `(b00)`: static parameter with delegate call.
   - `0x01` => `(b01)`: dynamic parameter with deleate call.
-  - `0x10` => `(b10)`: static parameter with call.
-  - `0x11` => `(b11)`: dynamic parameter with call.
+  - `0x02` => `(b10)`: static parameter with call.
+  - `0x03` => `(b11)`: dynamic parameter with call.
 
 ### Return data count
 
