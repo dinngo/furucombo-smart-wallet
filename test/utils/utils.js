@@ -1,7 +1,7 @@
 const { BN, ether } = require('@openzeppelin/test-helpers');
 const fetch = require('node-fetch');
 const { expect } = require('chai');
-const { MATIC_PROVIDER } = require('./constants');
+const { MATIC_PROVIDER, RecordActionResultSig } = require('./constants');
 
 function profileGas(receipt) {
   receipt.logs.forEach(element => {
@@ -79,6 +79,20 @@ function decimal6(amount) {
   return new BN(amount).mul(new BN('1000000'));
 }
 
+function getActionReturn(receipt, dataTypes) {
+  var actionResult;
+  receipt.receipt.rawLogs.forEach(element => {
+    if (element.topics[0] === RecordActionResultSig) {
+      const bytesData = web3.eth.abi.decodeParameters(
+        ['bytes'],
+        element.data
+      )[0];
+      actionResult = web3.eth.abi.decodeParameters(dataTypes, bytesData);
+    }
+  });
+  return actionResult;
+}
+
 // Only works when one function name matches
 function getAbi(artifact, name) {
   var abi;
@@ -103,6 +117,7 @@ function getCallActionData(ethValue, contract, funcName, params) {
     [ethValue, getCallData(contract, funcName, params)]
   );
 }
+
 module.exports = {
   profileGas,
   evmSnapshot,
@@ -111,6 +126,7 @@ module.exports = {
   mulPercent,
   cUnit,
   decimal6,
+  getActionReturn,
   getAbi,
   getCallData,
   getCreated,
