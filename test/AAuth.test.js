@@ -25,7 +25,7 @@ const AAuth = artifacts.require('AAuth');
 
 const FUNCTION_SIG_EXECUTE = '0x1cff79cd';
 
-contract('AAuth', function([_, user, someone1, someone2]) {
+contract('AAuth', function([_, owner, user, someone1, someone2]) {
   let id;
 
   before(async function() {
@@ -34,7 +34,7 @@ contract('AAuth', function([_, user, someone1, someone2]) {
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
-    this.aAuth = await AAuth.new();
+    this.aAuth = await AAuth.new(owner);
   });
 
   beforeEach(async function() {
@@ -336,14 +336,14 @@ contract('AAuth', function([_, user, someone1, someone2]) {
     });
   });
 
-  describe('Kill', function() {
+  describe('Destroy', function() {
     beforeEach(async function() {
       expect(await web3.eth.getCode(this.aAuth.address)).not.eq('0x');
     });
 
     it('kill by owner', async function() {
-      await this.aAuth.kill({
-        from: _,
+      await this.aAuth.destroy({
+        from: owner,
       });
       // Verify
       expect(await web3.eth.getCode(this.aAuth.address)).eq('0x');
@@ -351,15 +351,15 @@ contract('AAuth', function([_, user, someone1, someone2]) {
 
     it('should revert: kill by invalid owner', async function() {
       await expectRevert(
-        this.aAuth.kill({
+        this.aAuth.destroy({
           from: user,
         }),
-        'Invalid owner'
+        'DestructibleAction: caller is not the owner'
       );
     });
 
     it('should revert: used in delegatecall', async function() {
-      const data = getCallData(AAuth, 'kill', []);
+      const data = getCallData(AAuth, 'destroy', []);
       await expectRevert.unspecified(
         this.userProxy.execute(this.aAuth.address, data, {
           from: user,
