@@ -161,7 +161,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Not allow delegate call to non-existing contract'
+          'Address: delegate call to non-contract'
         );
       });
 
@@ -202,11 +202,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'Address: delegate call to non-contract.'
         );
       });
 
@@ -216,7 +217,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Delegate call only'
+          'TaskExecutor: Delegate call only'
         );
       });
 
@@ -242,7 +243,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Tos and datas length inconsistent'
+          'TaskExecutor: Tos and datas length inconsistent'
         );
       });
 
@@ -268,7 +269,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Tos and configs length inconsistent'
+          'TaskExecutor: Tos and configs length inconsistent'
         );
       });
     });
@@ -367,7 +368,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await balanceFoo.delta()).to.be.bignumber.eq(actionEthValue);
       });
 
-      it('send token', async function() {
+      it('should revert: send token', async function() {
         // Prepare action data
         const actionEthValue = ether('5');
         const actionData = web3.eth.abi.encodeParameters(
@@ -384,13 +385,13 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await this.userProxy.execute(target, data, {
-          from: user,
-          value: actionEthValue,
-        });
-
-        // Verify
-        expect(await balanceSomeone.delta()).to.be.bignumber.eq(actionEthValue);
+        await expectRevert(
+          this.userProxy.execute(target, data, {
+            from: user,
+            value: actionEthValue,
+          }),
+          'Address: call to non-contract'
+        );
       });
 
       it('should revert: call contract revert', async function() {
@@ -438,11 +439,12 @@ contract('TaskExecutor', function([_, user, someone]) {
           [actionData],
         ]);
         const target = this.taskExecutor.address;
-        await expectRevert.unspecified(
+        await expectRevert(
           this.userProxy.execute(target, data, {
             from: user,
             value: ether('0.01'),
-          })
+          }),
+          'TaskExecutor: low-level call with value failed'
         );
       });
     });
@@ -769,7 +771,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Reference to out of localStack'
+          'TaskExecutor: Reference to out of localStack'
         );
       });
 
@@ -797,7 +799,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Return num and parsed return num not matched'
+          'TaskExecutor: Return num and parsed return num not matched'
         );
       });
 
@@ -1106,7 +1108,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Reference to out of localStack'
+          'TaskExecutor: Reference to out of localStack'
         );
       });
 
@@ -1136,7 +1138,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Return num and parsed return num not matched'
+          'TaskExecutor: Return num and parsed return num not matched'
         );
       });
 

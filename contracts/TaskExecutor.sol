@@ -17,7 +17,7 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
     address private immutable self;
 
     modifier delegateCallOnly() {
-        require(self != address(this), "Delegate call only");
+        require(self != address(this), "TaskExecutor: Delegate call only");
         _;
     }
 
@@ -55,11 +55,11 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
 
         require(
             tos.length == datas.length,
-            "Tos and datas length inconsistent"
+            "TaskExecutor: Tos and datas length inconsistent"
         );
         require(
             tos.length == configs.length,
-            "Tos and configs length inconsistent"
+            "TaskExecutor: Tos and configs length inconsistent"
         );
 
         for (uint256 i = 0; i < tos.length; i++) {
@@ -72,7 +72,11 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
                 _trimParams(datas[i], config, localStack, index);
 
                 // Execute action by delegate call
-                bytes memory result = _execDelegateCall(tos[i], datas[i]);
+                bytes memory result =
+                    tos[i].functionDelegateCall(
+                        datas[i],
+                        "TaskExecutor: low-level delegate call failed"
+                    );
 
                 // Store return data from action to local stack
                 index = _parseReturn(result, config, localStack, index);
@@ -87,7 +91,12 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
                 _trimParams(_data, config, localStack, index);
 
                 // Execute action by call
-                bytes memory result = _execCall(tos[i], _data, ethValue);
+                bytes memory result =
+                    tos[i].functionCallWithValue(
+                        _data,
+                        ethValue,
+                        "TaskExecutor: low-level call with value failed"
+                    );
 
                 // Store return data from action to local stack depend on config
                 index = _parseReturn(result, config, localStack, index);
@@ -119,7 +128,10 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
 
         // Trim the data with the reference and parameters
         for (uint256 i = 0; i < refs.length; i++) {
-            require(refs[i] < index, "Reference to out of localStack");
+            require(
+                refs[i] < index,
+                "TaskExecutor: Reference to out of localStack"
+            );
             bytes32 ref = localStack[refs[i]];
             uint256 offset = params[i];
             uint256 base = PERCENTAGE_BASE;
@@ -159,7 +171,7 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
             uint256 newIndex = _parse(localStack, ret, index);
             require(
                 newIndex == index + num,
-                "Return num and parsed return num not matched"
+                "TaskExecutor: Return num and parsed return num not matched"
             );
             index = newIndex;
         }
@@ -179,10 +191,10 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
     ) internal pure returns (uint256 newIndex) {
         uint256 len = ret.length;
         // The return value should be multiple of 32-bytes to be parsed.
-        require(len % 32 == 0, "Illegal length for _parse");
+        require(len % 32 == 0, "TaskExecutor: Illegal length for _parse");
         // Estimate the tail after the process.
         newIndex = index + len / 32;
-        require(newIndex <= 256, "Stack overflow");
+        require(newIndex <= 256, "TaskExecutor: Stack overflow");
         assembly {
             let offset := shl(5, index)
             // Store the data into localStack
@@ -209,46 +221,5 @@ contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
         returns (uint256, bytes memory)
     {
         return abi.decode(data, (uint256, bytes));
-    }
-
-    /**
-     * @notice The execution of a single cube.
-     * @param _to The handler of cube.
-     * @param _data The cube execution data.
-     */
-    function _execDelegateCall(address _to, bytes memory _data)
-        internal
-        returns (bytes memory)
-    {
-        require(
-            _to.isContract(),
-            "Not allow delegate call to non-existing contract"
-        );
-
-        (bool success, bytes memory result) = _to.delegatecall(_data);
-        if (!success) {
-            if (result.length < 68) revert();
-            assembly {
-                result := add(result, 0x04)
-            }
-            revert(abi.decode(result, (string)));
-        }
-        return result;
-    }
-
-    /**
-     * @notice The execution of a single cube through call.
-     * @param _to The address of action.
-     * @param _data The action execution data.
-     * @param _value The action execution ether.
-     */
-    function _execCall(
-        address _to,
-        bytes memory _data,
-        uint256 _value
-    ) internal returns (bytes memory) {
-        (bool success, bytes memory result) = _to.call{value: _value}(_data);
-        require(success, string(result));
-        return result;
     }
 }
