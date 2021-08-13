@@ -4,8 +4,10 @@ pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
-import "./IFurucombo.sol";
 import "../ActionBase.sol";
+import "../../utils/DestructibleAction.sol";
+import "../../utils/ErrorMsg.sol";
+import "./IFurucombo.sol";
 
 contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
     using SafeERC20 for IERC20;

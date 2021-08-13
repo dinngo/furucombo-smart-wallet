@@ -138,7 +138,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     );
 
     // Create the second rewardA angel
-    [this.angelA2, this.angelAPid] = await addAngel(
+    [this.angelA2, this.angelA2Pid] = await addAngel(
       this.angelFactory,
       this.stakingToken,
       this.rewardTokenA,

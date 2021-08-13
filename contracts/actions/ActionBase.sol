@@ -3,8 +3,6 @@ pragma solidity ^0.6.0;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "../interfaces/IERC20Usdt.sol";
-import "../utils/DestructibleAction.sol";
-import "../utils/ErrorMsg.sol";
 
 abstract contract ActionBase {
     using SafeERC20 for IERC20;

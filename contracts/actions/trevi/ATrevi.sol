@@ -4,6 +4,9 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../ActionBase.sol";
+import "../../utils/DestructibleAction.sol";
+import "../../utils/ErrorMsg.sol";
+
 import "../../externals/trevi/interfaces/IArchangel.sol";
 import "../../externals/trevi/interfaces/IAngel.sol";
 import "../../externals/trevi/interfaces/IFountain.sol";
@@ -73,6 +76,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
     }
 
     /// @notice Harvest from multiple angels and charge fee.
+    /// @param token The staking token of fountain.
     /// @param angels The angels to be harvested.
     /// @param tokensOut The tokens to be returned amount.
     /// @return The token amounts.
@@ -81,7 +85,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         IAngel[] calldata angels,
         address[] calldata tokensOut
     ) external payable returns (uint256[] memory) {
-        // Check reward tokens should be more than tokens to be returned
+        // Check reward tokens length should be more than tokens length to be returned
         _requireMsg(
             angels.length >= tokensOut.length,
             "harvestAngelsAndCharge",
