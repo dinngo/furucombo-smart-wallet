@@ -817,7 +817,6 @@ contract('TaskExecutor', function([_, user, someone]) {
         const data = getCallData(TaskExecutor, 'batchExec', [
           [this.fooAction.address, this.fooAction.address],
           [
-            // expect 2 32-bytes return but will only get 1
             '0x0001000000000000000000000000000000000000000000000000000000000000', // set localStack[0]
             '0x0100000000000000000200ffffffffffffffffffffffffffffffffffffffffff', // replace params[1] <- local stack[0]
           ],
@@ -866,7 +865,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       it('replace parameter with dynamic array return', async function() {
         // Prepare action data
         const actionAEthValue = ether('0');
-        const secAmt = ether('1');
+        const secAmt = ether('2');
         const actionAData = getCallActionData(
           actionAEthValue,
           Foo,
@@ -890,7 +889,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.foo.address, this.foo.address],
           [
             '0x0205000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0300000000000000000102ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[2]
+            '0x0300000000000000000103ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[3]
           ],
           [actionAData, actionBData],
         ]);
@@ -1240,7 +1239,7 @@ contract('TaskExecutor', function([_, user, someone]) {
 
       it('replace parameter with dynamic array return by delegate call + call', async function() {
         // Prepare action data
-        const secAmt = ether('1');
+        const secAmt = ether('2');
         const actionAData = getCallData(FooAction, 'barUList', [
           this.foo.address,
           ether('1'),
@@ -1264,7 +1263,7 @@ contract('TaskExecutor', function([_, user, someone]) {
           [this.fooAction.address, this.foo.address],
           [
             '0x0005000000000000000000000000000000000000000000000000000000000000', // be referenced
-            '0x0300000000000000000102ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[2]
+            '0x0300000000000000000103ffffffffffffffffffffffffffffffffffffffffff', // replace params[0] <- local stack[3]
           ],
           [actionAData, actionBData],
         ]);
