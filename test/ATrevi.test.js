@@ -165,7 +165,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
     // Create actions
     this.fee = new BN('2000'); // 20% harvest fee
-    this.executor = await TaskExecutor.new();
+    this.executor = await TaskExecutor.new(owner);
     this.aTrevi = await ATrevi.new(
       owner,
       this.archangel.address,

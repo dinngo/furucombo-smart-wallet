@@ -37,7 +37,7 @@ contract('AFurucombo', function([_, owner, user]) {
 
   before(async function() {
     // Create actions
-    this.executor = await TaskExecutor.new();
+    this.executor = await TaskExecutor.new(owner);
     this.aFurucombo = await AFurucombo.new(owner, FURUCOMBO_PROXY);
 
     this.token = await IToken.at(tokenAddress);

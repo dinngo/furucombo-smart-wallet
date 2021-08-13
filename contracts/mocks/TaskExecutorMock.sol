@@ -8,7 +8,7 @@ import "./debug/GasProfiler.sol";
 contract TaskExecutorMock is TaskExecutor, GasProfiler {
     event RecordActionResult(bytes value);
 
-    receive() external payable {}
+    constructor(address payable _owner) public TaskExecutor(_owner) {}
 
     function execMock(address to, bytes memory data)
         external
@@ -16,20 +16,16 @@ contract TaskExecutorMock is TaskExecutor, GasProfiler {
         returns (bytes memory result)
     {
         _setBase();
-        result = _exec(to, data);
+        result = to.functionDelegateCall(data);
         _deltaGas("Gas");
         emit RecordActionResult(result);
-        return result;
     }
 
     function callMock(address to, bytes memory data)
         external
         payable
-        returns (bytes memory)
+        returns (bytes memory result)
     {
-        (bool success, bytes memory result) = to.call{value: 0}(data);
-        require(success, "callMock failed");
-
-        return result;
+        result = to.functionCallWithValue(data, 0);
     }
 }
