@@ -8,6 +8,6 @@ All notable changes to this project will be documented in this file.
 
 - Task Executor interface for Furucombo Smart Wallet.
 - DSProxy auth action
-- Furucombo action auth action
+- Furucombo action
 - Trevi action
 - Wallet action
