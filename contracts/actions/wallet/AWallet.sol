@@ -24,8 +24,9 @@ contract AWallet is ActionBase, DestructibleAction, ErrorMsg {
         );
 
         // Get DSProxy owner as receiver
-        address payable receiver =
-            address(uint160(IDSProxy(address(this)).owner()));
+        // address payable receiver =
+        //     address(uint160(IDSProxy(address(this)).owner()));
+        address payable receiver = payable(IDSProxy(address(this)).owner());
 
         // Withdraw tokens to receiver
         uint256[] memory amountsOut = new uint256[](tokens.length);

@@ -56,11 +56,11 @@ contract('AWallet', function([_, owner, user, someone1]) {
   });
 
   describe('withdraw token', function() {
-    const depositNativeAMount = ether('5');
+    const depositNativeAmount = ether('5');
     const depositTokenAAmount = ether('10');
     const depositTokenBAmount = ether('10');
     beforeEach(async function() {
-      send.ether(user, this.userProxy.address, depositNativeAMount);
+      send.ether(user, this.userProxy.address, depositNativeAmount);
       await this.tokenA.transfer(this.userProxy.address, depositTokenAAmount, {
         from: tokenAProviderAddress,
       });
@@ -94,7 +94,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
         await this.tokenB.balanceOf.call(this.userProxy.address)
       ).to.be.bignumber.eq(depositTokenBAmount);
       expect(await balanceProxy.get()).to.be.bignumber.eq(
-        depositNativeAMount.add(dummyAmount)
+        depositNativeAmount.add(dummyAmount)
       );
 
       // Verify user balance
@@ -130,7 +130,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
         await this.tokenB.balanceOf.call(this.userProxy.address)
       ).to.be.bignumber.eq(depositTokenBAmount);
       expect(await balanceProxy.get()).to.be.bignumber.eq(
-        depositNativeAMount.add(dummyAmount)
+        depositNativeAmount.add(dummyAmount)
       );
 
       // Verify user balance
@@ -161,7 +161,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
 
       // Verify proxy balance
       expect(await balanceProxy.get()).to.be.bignumber.eq(
-        depositNativeAMount.sub(withdrawAmount).add(dummyAmount)
+        depositNativeAmount.sub(withdrawAmount).add(dummyAmount)
       );
       expect(
         await this.tokenA.balanceOf.call(this.userProxy.address)
@@ -202,7 +202,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       // Verify user balance
       // return all balance of DSProxy includes dummyAmount
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        depositNativeAMount.sub(new BN(receipt.receipt.gasUsed))
+        depositNativeAmount.sub(new BN(receipt.receipt.gasUsed))
       );
     });
 
@@ -226,7 +226,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
 
       // Verify Proxy
       expect(await balanceProxy.get()).to.be.bignumber.eq(
-        depositNativeAMount.sub(withdrawNativeAmount).add(dummyAmount)
+        depositNativeAmount.sub(withdrawNativeAmount).add(dummyAmount)
       );
       expect(
         await this.tokenA.balanceOf.call(this.userProxy.address)
@@ -249,7 +249,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       );
     });
 
-    it('should revert: insufficient ftn token', async function() {
+    it('should revert: tokens and amounts length inconsistent', async function() {
       const data = getCallData(AWallet, 'withdrawTokens', [
         [this.tokenA.address, NATIVE_TOKEN, this.tokenB.address],
         [],
@@ -261,6 +261,41 @@ contract('AWallet', function([_, owner, user, someone1]) {
           value: ether('0.01'),
         }),
         'withdraw: tokens and amounts length inconsistent'
+      );
+    });
+
+    it('should revert: token insufficient balance', async function() {
+      // Prepare action data
+      const dummyAmount = ether('0.01');
+      const withdrawAmount = depositTokenAAmount.mul(new BN(2));
+      const data = getCallData(AWallet, 'withdrawTokens', [
+        [this.tokenA.address],
+        [withdrawAmount],
+      ]);
+
+      await expectRevert(
+        this.userProxy.execute(this.aWallet.address, data, {
+          from: user,
+          value: dummyAmount,
+        }),
+        'ERC20: transfer amount exceeds balance'
+      );
+    });
+
+    it('should revert: native token insufficient balance', async function() {
+      // Prepare action data
+      const dummyAmount = ether('0.01');
+      const withdrawAmount = depositNativeAmount.mul(new BN(2));
+      const data = getCallData(AWallet, 'withdrawTokens', [
+        [NATIVE_TOKEN],
+        [withdrawAmount],
+      ]);
+
+      await expectRevert.unspecified(
+        this.userProxy.execute(this.aWallet.address, data, {
+          from: user,
+          value: dummyAmount,
+        })
       );
     });
   });
