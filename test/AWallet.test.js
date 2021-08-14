@@ -8,10 +8,7 @@ const {
   time,
   send,
 } = require('@openzeppelin/test-helpers');
-const {
-  MAX_UINT256,
-  MAX_INT256,
-} = require('@openzeppelin/test-helpers/src/constants');
+const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 const { tracker } = balance;
 const { expect } = require('chai');
 
