@@ -24,6 +24,20 @@
 // const fs = require('fs');
 // const mnemonic = fs.readFileSync(".secret").toString().trim();
 
+const HDWalletProvider = require('@truffle/hdwallet-provider');
+const fs = require('fs');
+
+let key_beta;
+
+try {
+  key_beta = fs
+    .readFileSync('.secret_beta')
+    .toString()
+    .trim();
+} catch (err) {
+  console.log('No available .secret_beta');
+}
+
 module.exports = {
   /**
    * Networks define how you connect to your ethereum client and let you set the
@@ -43,6 +57,17 @@ module.exports = {
       gasPrice: 0x01,
       gas: 15000000,
       networkCheckTimeout: 10000,
+    },
+    beta: {
+      provider: function() {
+        return new HDWalletProvider(
+          key_beta,
+          'https://polygon-beta.furucombo.app/'
+        );
+      },
+      network_id: '*',
+      gasPrice: 0x3b9aca00, // 1 gwei
+      gas: 20000000,
     },
   },
 

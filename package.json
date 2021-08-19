@@ -24,7 +24,8 @@
     "truffle": "5.3.9"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "3.4.1"
+    "@openzeppelin/contracts": "3.4.1",
+    "@truffle/hdwallet-provider": "^1.4.3"
   },
   "husky": {
     "hooks": {
