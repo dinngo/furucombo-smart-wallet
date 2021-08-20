@@ -35,7 +35,7 @@ Task Executor is a multi-call architecture. It can execute multi-operations in a
 
 #### Action
 
-Action is a delegate call by Task Executor for the specific contracts or specific operations.
+Action is the contract delegate call by Task Executor for the specific contracts or specific operations.
 
 ## License
 
