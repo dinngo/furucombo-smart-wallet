@@ -27,11 +27,15 @@ $ POLYGON_MAINNET_NODE=https://polygon-mainnet.infura.io/v3/{Your_project_ID} np
 
 ### Usage
 
-Furucombo-Smart-Wallet contracts contains two different parts, **Task Executor** and **Action**.
+Furucombo-Smart-Wallet contracts contain two different parts, **Task Executor** and **Action**.
 
 #### Task Executor
 
+Task Executor is a multi-call architecture. It can execute multi-operations in a single transaction. Task Executor includes two call types of operation, `CallWithValue` and `DelegateCall.` Also, operation parameters may apply the execution result. For the details, please refer to the [Chained Input guideline](CHAINEDINPUT.md).
+
 #### Action
+
+Action is a delegate call by Task Executor for the specific contracts or specific operations.
 
 ## License
 
