@@ -16,7 +16,7 @@ Task Executor is a multi-call architecture system, and it can execute multi-oper
 
 ### Action
 
-Action is the contract delegate call by Task Executor for the specific contracts or specific operations. Action contracts are in `contracts/actions` folder with `A` prefix on filename.
+Action is the contract delegate called by Task Executor for the specific contracts or specific operations. Action contracts are in `contracts/actions` folder with `A` prefix on filename.
 
 ## ![](images/furucombo_smart_wallet.png)
 
