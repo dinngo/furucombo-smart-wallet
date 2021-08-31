@@ -2,7 +2,9 @@
 
 ## Overview
 
-Furucombo-Smart-Wallet is a wallet system to help users easily manage their assets. Users can interact with multiple contracts in a single transaction, easy to manage wallet authority, and execute automation tasks. Furucombo-Smart-Wallet makes up of three parts, **DSProxy**, **Task Executor**, and **Action**. Users can hold their assets in DSProxy and execute operations through Task Executor and Action.
+Furucombo-Smart-Wallet is a wallet system to help users easily manage their assets. Users can interact with multiple contracts in a single transaction, manage wallet authority, and execute automation tasks. Furucombo-Smart-Wallet makes up of three parts, **DSProxy**, **Task Executor**, and **Action**. Users can hold their assets in DSProxy and execute operations through Task Executor and Action
+
+---
 
 ## Description
 
