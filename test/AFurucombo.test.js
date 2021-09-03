@@ -312,7 +312,7 @@ contract('AFurucombo', function([_, owner, user]) {
 
     it('should revert: remaining tokens >= token dust', async function() {
       const tokensIn = [this.token.address];
-      const amountsIn = [new BN(10)];
+      const amountsIn = [this.furucomboTokenDust];
       const tokensOut = [];
       const tos = [];
       const configs = [];
