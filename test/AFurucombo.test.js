@@ -21,6 +21,7 @@ const {
   getActionReturn,
   getCallData,
 } = require('./utils/utils');
+const { BN } = require('@openzeppelin/test-helpers/src/setup');
 
 const TaskExecutor = artifacts.require('TaskExecutorMock');
 const AFurucombo = artifacts.require('AFurucombo');
@@ -63,6 +64,7 @@ contract('AFurucombo', function([_, owner, user]) {
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
+    this.furucomboTokenDust = new BN(10);
   });
 
   beforeEach(async function() {
@@ -150,7 +152,7 @@ contract('AFurucombo', function([_, owner, user]) {
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify furucombo proxy
-      expect(tokenFurucomboAfter).to.be.zero;
+      expect(tokenFurucomboAfter).to.be.bignumber.lt(this.furucomboTokenDust);
 
       profileGas(receipt);
     });
@@ -234,9 +236,46 @@ contract('AFurucombo', function([_, owner, user]) {
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify furucombo proxy
-      expect(tokenFurucomboAfter).to.be.zero;
+      expect(tokenFurucomboAfter).to.be.bignumber.lt(this.furucomboTokenDust);
 
       profileGas(receipt);
+    });
+
+    it('remaining tokens < token dust', async function() {
+      const amountIn = this.furucomboTokenDust.sub(new BN(1));
+      const tokensIn = [this.token.address];
+      const amountsIn = [amountIn];
+      const tokensOut = [];
+      const tos = [];
+      const configs = [];
+      const datas = [];
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aFurucombo.address,
+        getCallData(AFurucombo, 'injectAndBatchExec', [
+          tokensIn,
+          amountsIn,
+          tokensOut,
+          tos,
+          configs,
+          datas,
+        ]),
+      ]);
+
+      await this.token.transfer(this.userProxy.address, amountsIn[0], {
+        from: tokenProvider,
+      });
+
+      await this.userProxy.execute(this.executor.address, data, {
+        from: user,
+      });
+
+      const tokenFurucomboAfter = await this.token.balanceOf.call(
+        FURUCOMBO_PROXY
+      );
+      // Verify furucombo proxy
+      expect(tokenFurucomboAfter).to.be.bignumber.eq(amountIn);
     });
 
     it('should revert: inconsistent length', async function() {
@@ -272,9 +311,9 @@ contract('AFurucombo', function([_, owner, user]) {
       );
     });
 
-    it('should revert: remaining tokens', async function() {
+    it('should revert: remaining tokens >= token dust', async function() {
       const tokensIn = [this.token.address];
-      const amountsIn = [ether('1')];
+      const amountsIn = [this.furucomboTokenDust];
       const tokensOut = [];
       const tos = [];
       const configs = [];

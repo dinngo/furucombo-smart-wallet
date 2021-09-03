@@ -14,6 +14,7 @@ contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
     using SafeMath for uint256;
 
     address payable public immutable proxy;
+    uint256 private constant _TOKEN_DUST = 10;
 
     constructor(address payable _owner, address payable _proxy)
         public
@@ -58,7 +59,7 @@ contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
         for (uint256 i = 0; i < tokensIn.length; i++) {
             if (tokensIn[i] != NATIVE_TOKEN_ADDRESS) {
                 _requireMsg(
-                    IERC20(tokensIn[i]).balanceOf(proxy) == 0,
+                    IERC20(tokensIn[i]).balanceOf(proxy) < _TOKEN_DUST,
                     "injectAndBatchExec",
                     "Furucombo has remaining tokens"
                 );
