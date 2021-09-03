@@ -242,8 +242,9 @@ contract('AFurucombo', function([_, owner, user]) {
     });
 
     it('remaining tokens < token dust', async function() {
+      const amountIn = this.furucomboTokenDust.sub(new BN(1));
       const tokensIn = [this.token.address];
-      const amountsIn = [this.furucomboTokenDust.sub(new BN(1))];
+      const amountsIn = [amountIn];
       const tokensOut = [];
       const tos = [];
       const configs = [];
@@ -274,7 +275,7 @@ contract('AFurucombo', function([_, owner, user]) {
         FURUCOMBO_PROXY
       );
       // Verify furucombo proxy
-      expect(tokenFurucomboAfter).to.be.bignumber.lt(this.furucomboTokenDust);
+      expect(tokenFurucomboAfter).to.be.bignumber.eq(amountIn);
     });
 
     it('should revert: inconsistent length', async function() {
