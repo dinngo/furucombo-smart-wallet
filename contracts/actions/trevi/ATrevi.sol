@@ -133,10 +133,15 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
                 // Get grace amount before harvest if fee charging
                 address grace = angels[i].GRACE();
                 uint256 amountGrace = _getBalance(grace);
+
+                // Fountain harvest
                 _fountainHarvest(fountain, angels[i]);
+
+                // Send charging fee to collector
                 amountGrace = _getBalance(grace).sub(amountGrace);
                 IERC20(grace).safeTransfer(collector, fee(amountGrace));
             } else {
+                // Fountain harvest
                 _fountainHarvest(fountain, angels[i]);
             }
         }
@@ -157,9 +162,9 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         try fountain.harvest(address(angel)) {} catch Error(
             string memory reason
         ) {
-            _revertMsg("_harvest", reason);
+            _revertMsg("_fountainHarvest", reason);
         } catch {
-            _revertMsg("_harvest");
+            _revertMsg("_fountainHarvest");
         }
     }
 
