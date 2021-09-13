@@ -13,12 +13,6 @@ const IDSProxy = artifacts.require('IDSProxy');
 contract('DelegateCallAction', function([_, owner, other]) {
   before(async function() {
     this.delegateCall = await DelegateCall.new(5);
-
-    this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    await this.dsRegistry.build(other);
-    this.otherProxy = await IDSProxy.at(
-      await this.dsRegistry.proxies.call(other)
-    );
   });
 
   beforeEach(async function() {
