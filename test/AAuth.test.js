@@ -16,6 +16,7 @@ const { expect } = require('chai');
 
 const { DS_PROXY_REGISTRY } = require('./utils/constants');
 const { evmRevert, evmSnapshot, getCallData } = require('./utils/utils');
+const { ZERO_ADDRESS } = require('@openzeppelin/test-helpers/src/constants');
 
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
@@ -47,7 +48,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
 
   describe('Create DSGuard And Set', function() {
     beforeEach(async function() {
-      expect(await this.userProxy.authority.call()).to.be.zero;
+      expect(await this.userProxy.authority.call()).to.be.eq(ZERO_ADDRESS);
     });
 
     it('normal', async function() {

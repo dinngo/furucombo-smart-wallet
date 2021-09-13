@@ -85,10 +85,45 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         IAngel[] calldata angels,
         address[] calldata tokensOut
     ) external payable returns (uint256[] memory) {
+        return _harvest(token, angels, tokensOut, true);
+    }
+
+    /// @notice Harvest from multiple angels without charge fee.
+    /// @param token The staking token of fountain.
+    /// @param angels The angels to be harvested.
+    /// @param tokensOut The tokens to be returned amount.
+    /// @return The token amounts.
+    function harvestAngels(
+        address token,
+        IAngel[] calldata angels,
+        address[] calldata tokensOut
+    ) external payable returns (uint256[] memory) {
+        return _harvest(token, angels, tokensOut, false);
+    }
+
+    /// @dev The fee to be charged.
+    /// @param amount The amount.
+    /// @return The amount to be charged.
+    function fee(uint256 amount) public view returns (uint256) {
+        return (amount.mul(harvestFee)).div(FEE_BASE);
+    }
+
+    /// @notice Harvest from multiple angels.
+    /// @param token The staking token of fountain.
+    /// @param angels The angels to be harvested.
+    /// @param tokensOut The tokens to be returned amount.
+    /// @param isCharge The flag of determining charge fee or not.
+    /// @return The token amounts.
+    function _harvest(
+        address token,
+        IAngel[] calldata angels,
+        address[] calldata tokensOut,
+        bool isCharge
+    ) internal returns (uint256[] memory) {
         // Check reward tokens length should be more than tokens length to be returned
         _requireMsg(
             angels.length >= tokensOut.length,
-            "harvestAngelsAndCharge",
+            "_harvest",
             "unexpected length"
         );
 
@@ -101,20 +136,21 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         }
 
         for (uint256 i = 0; i < angels.length; i++) {
-            address grace = angels[i].GRACE();
-            uint256 amountGrace = _getBalance(grace);
+            if (isCharge) {
+                // Get grace amount before harvest if fee charging
+                address grace = angels[i].GRACE();
+                uint256 amountGrace = _getBalance(grace);
 
-            try fountain.harvest(address(angels[i])) {} catch Error(
-                string memory reason
-            ) {
-                _revertMsg("harvestAngelsAndCharge", reason);
-            } catch {
-                _revertMsg("harvestAngelsAndCharge");
+                // Fountain harvest
+                _fountainHarvest(fountain, angels[i]);
+
+                // Send charging fee to collector
+                amountGrace = _getBalance(grace).sub(amountGrace);
+                IERC20(grace).safeTransfer(collector, fee(amountGrace));
+            } else {
+                // Fountain harvest
+                _fountainHarvest(fountain, angels[i]);
             }
-            amountGrace = _getBalance(grace).sub(amountGrace);
-
-            // Charge fee
-            IERC20(grace).safeTransfer(collector, fee(amountGrace));
         }
 
         // Calculate increased output token amounts
@@ -125,11 +161,18 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         return amountsOut;
     }
 
-    /// @dev The fee to be charged.
-    /// @param amount The amount.
-    /// @return The amount to be charged.
-    function fee(uint256 amount) public view returns (uint256) {
-        return (amount.mul(harvestFee)).div(FEE_BASE);
+    /// @notice fountain harvest
+    /// @param angel The angel wants to harvest from.
+    /// @param fountain The fountain want to harvest.`
+    function _fountainHarvest(IFountain fountain, IAngel angel) internal {
+        // Fountain harvest
+        try fountain.harvest(address(angel)) {} catch Error(
+            string memory reason
+        ) {
+            _revertMsg("_fountainHarvest", reason);
+        } catch {
+            _revertMsg("_fountainHarvest");
+        }
     }
 
     /// @notice Get fountain by staking token.

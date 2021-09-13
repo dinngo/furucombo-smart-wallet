@@ -238,7 +238,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Check task executor
       expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
-      expect(tokenAfter).to.be.zero;
+      expect(tokenAfter).to.be.bignumber.zero;
       expect(fountainAfter).to.be.bignumber.eq(stakingAmount);
 
       profileGas(receipt);
@@ -340,7 +340,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       // Verify user dsproxy
       expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
       expect(tokenAfter).to.be.bignumber.eq(withdrawAmount);
-      expect(fountainAfter).to.be.zero;
+      expect(fountainAfter).to.be.bignumber.zero;
 
       profileGas(receipt);
     });
@@ -387,7 +387,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('harvest', function() {
+  describe('harvest with fee charging', function() {
     const stakingAmount = ether('10');
 
     beforeEach(async function() {
@@ -662,7 +662,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        'harvestAngelsAndCharge: unexpected length'
+        '_harvest: unexpected length'
       );
     });
 
@@ -680,7 +680,292 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        'harvestAngelsAndCharge: _harvestAngel: not added by angel'
+        '_fountainHarvest: _harvestAngel: not added by angel'
+      );
+    });
+  });
+
+  describe('harvest without fee charging', function() {
+    const stakingAmount = ether('10');
+
+    beforeEach(async function() {
+      // Send ftn token to user dsproxy
+      await this.stakingToken.approve(this.fountain.address, stakingAmount, {
+        from: stakingTokenProvider,
+      });
+      await this.fountain.depositTo(stakingAmount, this.userProxy.address, {
+        from: stakingTokenProvider,
+      });
+      expect(
+        await this.fountain.balanceOf(this.userProxy.address)
+      ).to.be.bignumber.eq(stakingAmount);
+
+      // Join angel A
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelA.address),
+        ]),
+        {
+          from: user,
+        }
+      );
+    });
+
+    it('normal', async function() {
+      // Join angel B
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelB.address),
+        ]),
+        {
+          from: user,
+        }
+      );
+
+      await increase(duration.hours(1));
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [
+          this.stakingToken.address,
+          [this.angelA.address, this.angelB.address],
+          [this.rewardTokenA.address, this.rewardTokenB.address],
+        ]),
+      ]);
+
+      // Execute
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
+
+      // Record after balance
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const rewardAAfter = await this.rewardTokenA.balanceOf.call(
+        this.userProxy.address
+      );
+      const rewardBAfter = await this.rewardTokenB.balanceOf.call(
+        this.userProxy.address
+      );
+
+      // Verify action return
+      const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
+      expect(actionReturn[0]).to.be.bignumber.eq(rewardAAfter);
+      expect(actionReturn[1]).to.be.bignumber.eq(rewardBAfter);
+      expect(actionReturn.length).to.equal(2);
+
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
+      expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
+      expect(rewardBAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify fee
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+      expect(
+        await this.rewardTokenB.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+
+      profileGas(receipt);
+    });
+
+    it('partial output tokens', async function() {
+      // Join angel B
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelB.address),
+        ]),
+        {
+          from: user,
+        }
+      );
+
+      await increase(duration.hours(1));
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [
+          this.stakingToken.address,
+          [this.angelA.address, this.angelB.address],
+          [this.rewardTokenA.address], // partial output tokens
+        ]),
+      ]);
+
+      // Execute
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
+
+      // Record after balance
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const rewardAAfter = await this.rewardTokenA.balanceOf.call(
+        this.userProxy.address
+      );
+      const rewardBAfter = await this.rewardTokenB.balanceOf.call(
+        this.userProxy.address
+      );
+
+      // Verify action return
+      const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
+      expect(actionReturn[0]).to.be.bignumber.eq(rewardAAfter);
+      expect(actionReturn.length).to.equal(1);
+
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
+      expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
+      expect(rewardBAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify fee
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+      expect(
+        await this.rewardTokenB.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+
+      profileGas(receipt);
+    });
+
+    it('duplicate reward tokens', async function() {
+      // Join angel A2
+      await this.userProxy.execute(
+        this.executor.address,
+        getCallData(TaskExecutor, 'callMock', [
+          this.fountain.address,
+          abi.simpleEncode('joinAngel(address)', this.angelA2.address),
+        ]),
+        {
+          from: user,
+        }
+      );
+
+      await increase(duration.hours(1));
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [
+          this.stakingToken.address,
+          [this.angelA.address, this.angelA2.address],
+          [this.rewardTokenA.address], // partial output tokens
+        ]),
+      ]);
+
+      // Execute
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+          value: dummyAmount,
+        }
+      );
+
+      // Record after balance
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const rewardAAfter = await this.rewardTokenA.balanceOf.call(
+        this.userProxy.address
+      );
+
+      // Verify action return
+      const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
+      expect(actionReturn[0]).to.be.bignumber.eq(rewardAAfter);
+      expect(actionReturn.length).to.equal(1);
+
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
+      expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify fee
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+
+      profileGas(receipt);
+    });
+
+    it('should revert: fountain not found', async function() {
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [dummy, [], []]),
+      ]);
+
+      await expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        '_getFountain: fountain not found'
+      );
+    });
+
+    it('should revert: fountain not found', async function() {
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [dummy, [], []]),
+      ]);
+
+      await expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        '_getFountain: fountain not found'
+      );
+    });
+
+    it('should revert: unexpected length', async function() {
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [
+          this.stakingToken.address,
+          [],
+          [dummy],
+        ]),
+      ]);
+
+      await expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        '_harvest: unexpected length'
+      );
+    });
+
+    it('should revert: angel not found', async function() {
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aTrevi.address,
+        getCallData(ATrevi, 'harvestAngels', [
+          this.stakingToken.address,
+          [this.angelC.address],
+          [],
+        ]),
+      ]);
+      await expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        '_fountainHarvest: _harvestAngel: not added by angel'
       );
     });
   });

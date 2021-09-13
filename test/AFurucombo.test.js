@@ -1,4 +1,9 @@
-const { balance, ether, expectRevert } = require('@openzeppelin/test-helpers');
+const {
+  balance,
+  ether,
+  expectRevert,
+  send,
+} = require('@openzeppelin/test-helpers');
 const abi = require('ethereumjs-abi');
 const { expect } = require('chai');
 const {
@@ -47,6 +52,7 @@ contract('AFurucombo', function([_, owner, user]) {
     // Registry new hFunds
     this.hFunds = await HFunds.new();
     this.registry = await IRegistry.at(FURUCOMBO_REGISTRY);
+    await send.ether(user, FURUCOMBO_REGISTRY_OWNER, ether('1'));
     await this.registry.register(
       this.hFunds.address,
       '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -147,8 +153,8 @@ contract('AFurucombo', function([_, owner, user]) {
       expect(actionReturn[0]).to.be.bignumber.eq(tokenOutAfter);
 
       // Verify user dsproxy
-      expect(balanceAfter).to.be.zero;
-      expect(tokenAfter).to.be.zero;
+      expect(balanceAfter).to.be.bignumber.zero;
+      expect(tokenAfter).to.be.bignumber.zero;
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify furucombo proxy
@@ -232,7 +238,7 @@ contract('AFurucombo', function([_, owner, user]) {
 
       // Check user dsproxy
       expect(balanceAfter).to.be.bignumber.gt(ether('0'));
-      expect(tokenAfter).to.be.zero;
+      expect(tokenAfter).to.be.bignumber.zero;
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify furucombo proxy
