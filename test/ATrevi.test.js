@@ -680,7 +680,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        '_harvest: _harvestAngel: not added by angel'
+        '_fountainHarvest: _harvestAngel: not added by angel'
       );
     });
   });
@@ -955,7 +955,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        '_harvest: _harvestAngel: not added by angel'
+        '_fountainHarvest: _harvestAngel: not added by angel'
       );
     });
   });
