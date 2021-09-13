@@ -1,16 +1,12 @@
-const { expectRevert, BN } = require('@openzeppelin/test-helpers');
+const { expectRevert } = require('@openzeppelin/test-helpers');
 
 const { expect } = require('chai');
 
-const { evmRevert, evmSnapshot, getCallData } = require('./utils/utils');
-
-const { DS_PROXY_REGISTRY } = require('./utils/constants');
+const { evmRevert, evmSnapshot } = require('./utils/utils');
 
 const DelegateCall = artifacts.require('DelegateCallActionMock');
-const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
-const IDSProxy = artifacts.require('IDSProxy');
 
-contract('DelegateCallAction', function([_, owner, other]) {
+contract('DelegateCallAction', function([_]) {
   before(async function() {
     this.delegateCall = await DelegateCall.new(5);
   });
