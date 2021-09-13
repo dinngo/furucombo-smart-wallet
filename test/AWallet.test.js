@@ -125,7 +125,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       // Verify Proxy
       expect(
         await this.tokenA.balanceOf.call(this.userProxy.address)
-      ).to.be.zero;
+      ).to.be.bignumber.zero;
       expect(
         await this.tokenB.balanceOf.call(this.userProxy.address)
       ).to.be.bignumber.eq(depositTokenBAmount);
@@ -191,7 +191,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       });
 
       // Verify proxy balance
-      expect(await balanceProxy.get()).to.be.zero;
+      expect(await balanceProxy.get()).to.be.bignumber.zero;
       expect(
         await this.tokenA.balanceOf.call(this.userProxy.address)
       ).to.be.bignumber.eq(depositTokenAAmount);
@@ -233,7 +233,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       ).to.be.bignumber.eq(depositTokenAAmount.sub(withdrawTokenAAmount));
       expect(
         await this.tokenB.balanceOf.call(this.userProxy.address)
-      ).to.be.zero;
+      ).to.be.bignumber.zero;
 
       // Verify user balance
       expect(await this.tokenA.balanceOf.call(user)).to.be.bignumber.eq(

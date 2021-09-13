@@ -153,8 +153,8 @@ contract('AFurucombo', function([_, owner, user]) {
       expect(actionReturn[0]).to.be.bignumber.eq(tokenOutAfter);
 
       // Verify user dsproxy
-      expect(balanceAfter).to.be.zero;
-      expect(tokenAfter).to.be.zero;
+      expect(balanceAfter).to.be.bignumber.zero;
+      expect(tokenAfter).to.be.bignumber.zero;
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify furucombo proxy
@@ -238,7 +238,7 @@ contract('AFurucombo', function([_, owner, user]) {
 
       // Check user dsproxy
       expect(balanceAfter).to.be.bignumber.gt(ether('0'));
-      expect(tokenAfter).to.be.zero;
+      expect(tokenAfter).to.be.bignumber.zero;
       expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify furucombo proxy
