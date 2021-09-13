@@ -4,19 +4,29 @@ pragma solidity ^0.6.0;
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../../utils/DestructibleAction.sol";
+import "../../utils/DelegateCallAction.sol";
 import "../../interfaces/IDSProxy.sol";
 import "../../utils/ErrorMsg.sol";
 import "../ActionBase.sol";
 
-contract AWallet is ActionBase, DestructibleAction, ErrorMsg {
+contract AWallet is
+    ActionBase,
+    DestructibleAction,
+    DelegateCallAction,
+    ErrorMsg
+{
     using SafeERC20 for IERC20;
 
-    constructor(address payable _owner) public DestructibleAction(_owner) {}
+    constructor(address payable _owner)
+        public
+        DestructibleAction(_owner)
+        DelegateCallAction()
+    {}
 
     function withdrawTokens(
         address[] calldata tokens,
         uint256[] calldata amounts
-    ) external payable returns (uint256[] memory) {
+    ) external payable delegateCallOnly returns (uint256[] memory) {
         _requireMsg(
             (tokens.length == amounts.length),
             "withdraw",

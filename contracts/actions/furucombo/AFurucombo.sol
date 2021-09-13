@@ -6,10 +6,16 @@ import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../ActionBase.sol";
 import "../../utils/DestructibleAction.sol";
+import "../../utils/DelegateCallAction.sol";
 import "../../utils/ErrorMsg.sol";
 import "./IFurucombo.sol";
 
-contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
+contract AFurucombo is
+    ActionBase,
+    DestructibleAction,
+    DelegateCallAction,
+    ErrorMsg
+{
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -19,6 +25,7 @@ contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
     constructor(address payable _owner, address payable _proxy)
         public
         DestructibleAction(_owner)
+        DelegateCallAction()
     {
         proxy = _proxy;
     }
@@ -38,7 +45,7 @@ contract AFurucombo is ActionBase, DestructibleAction, ErrorMsg {
         address[] calldata tos,
         bytes32[] calldata configs,
         bytes[] memory datas
-    ) external payable returns (uint256[] memory) {
+    ) external payable delegateCallOnly returns (uint256[] memory) {
         // Snapshot output token amounts
         uint256[] memory amountsOut = new uint256[](tokensOut.length);
         for (uint256 i = 0; i < tokensOut.length; i++) {

@@ -217,7 +217,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'TaskExecutor: Delegate call only'
+          'Delegate call only'
         );
       });
 
