@@ -685,7 +685,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe.only('harvest without fee charging', function() {
+  describe('harvest without fee charging', function() {
     const stakingAmount = ether('10');
 
     beforeEach(async function() {

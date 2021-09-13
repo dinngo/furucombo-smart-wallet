@@ -105,7 +105,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
     /// @param token The staking token of fountain.
     /// @param angels The angels to be harvested.
     /// @param tokensOut The tokens to be returned amount.
-    /// @param isCharge The flag to determine charge fee or not.
+    /// @param isCharge The flag of determining charge fee or not.
     /// @return The token amounts.
     function _harvest(
         address token,
