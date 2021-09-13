@@ -60,7 +60,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
     const depositTokenAAmount = ether('10');
     const depositTokenBAmount = ether('10');
     beforeEach(async function() {
-      send.ether(user, this.userProxy.address, depositNativeAmount);
+      await send.ether(user, this.userProxy.address, depositNativeAmount);
       await this.tokenA.transfer(this.userProxy.address, depositTokenAAmount, {
         from: tokenAProviderAddress,
       });

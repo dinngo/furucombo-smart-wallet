@@ -238,7 +238,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Check task executor
       expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
-      expect(tokenAfter).to.be.zero;
+      expect(tokenAfter).to.be.bignumber.zero;
       expect(fountainAfter).to.be.bignumber.eq(stakingAmount);
 
       profileGas(receipt);
@@ -340,7 +340,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       // Verify user dsproxy
       expect(balanceAfter).to.be.bignumber.eq(dummyAmount);
       expect(tokenAfter).to.be.bignumber.eq(withdrawAmount);
-      expect(fountainAfter).to.be.zero;
+      expect(fountainAfter).to.be.bignumber.zero;
 
       profileGas(receipt);
     });
@@ -769,8 +769,12 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       expect(rewardBAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify fee
-      expect(await this.rewardTokenA.balanceOf.call(collector)).to.be.zero;
-      expect(await this.rewardTokenB.balanceOf.call(collector)).to.be.zero;
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+      expect(
+        await this.rewardTokenB.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
 
       profileGas(receipt);
     });
@@ -830,8 +834,12 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       expect(rewardBAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify fee
-      expect(await this.rewardTokenA.balanceOf.call(collector)).to.be.zero;
-      expect(await this.rewardTokenB.balanceOf.call(collector)).to.be.zero;
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
+      expect(
+        await this.rewardTokenB.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
 
       profileGas(receipt);
     });
@@ -887,7 +895,9 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       expect(rewardAAfter).to.be.bignumber.gt(ether('0'));
 
       // Verify fee
-      expect(await this.rewardTokenA.balanceOf.call(collector)).to.be.zero;
+      expect(
+        await this.rewardTokenA.balanceOf.call(collector)
+      ).to.be.bignumber.zero;
 
       profileGas(receipt);
     });

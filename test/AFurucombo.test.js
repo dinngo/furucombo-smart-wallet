@@ -52,7 +52,7 @@ contract('AFurucombo', function([_, owner, user]) {
     // Registry new hFunds
     this.hFunds = await HFunds.new();
     this.registry = await IRegistry.at(FURUCOMBO_REGISTRY);
-    send.ether(user, FURUCOMBO_REGISTRY_OWNER, ether('1'));
+    await send.ether(user, FURUCOMBO_REGISTRY_OWNER, ether('1'));
     await this.registry.register(
       this.hFunds.address,
       '0x0000000000000000000000000000000000000000000000000000000000000001',

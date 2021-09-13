@@ -101,6 +101,13 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         return _harvest(token, angels, tokensOut, false);
     }
 
+    /// @dev The fee to be charged.
+    /// @param amount The amount.
+    /// @return The amount to be charged.
+    function fee(uint256 amount) public view returns (uint256) {
+        return (amount.mul(harvestFee)).div(FEE_BASE);
+    }
+
     /// @notice Harvest from multiple angels.
     /// @param token The staking token of fountain.
     /// @param angels The angels to be harvested.
@@ -166,13 +173,6 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         } catch {
             _revertMsg("_fountainHarvest");
         }
-    }
-
-    /// @dev The fee to be charged.
-    /// @param amount The amount.
-    /// @return The amount to be charged.
-    function fee(uint256 amount) public view returns (uint256) {
-        return (amount.mul(harvestFee)).div(FEE_BASE);
     }
 
     /// @notice Get fountain by staking token.
