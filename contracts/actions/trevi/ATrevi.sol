@@ -1,17 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity 0.6.12;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/math/SafeMath.sol";
 import "../ActionBase.sol";
 import "../../utils/DestructibleAction.sol";
+import "../../utils/DelegateCallAction.sol";
 import "../../utils/ErrorMsg.sol";
 
 import "../../externals/trevi/interfaces/IArchangel.sol";
 import "../../externals/trevi/interfaces/IAngel.sol";
 import "../../externals/trevi/interfaces/IFountain.sol";
 
-contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
+contract ATrevi is
+    ActionBase,
+    DestructibleAction,
+    DelegateCallAction,
+    ErrorMsg
+{
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
@@ -25,7 +31,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         address _archangel,
         address _collector,
         uint256 _fee
-    ) public DestructibleAction(_owner) {
+    ) public DestructibleAction(_owner) DelegateCallAction() {
         require(_fee <= FEE_BASE, "ATrevi: fee rate exceeded");
         archangel = IArchangel(_archangel);
         collector = _collector;
@@ -39,6 +45,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
     function deposit(address token, uint256 amount)
         external
         payable
+        delegateCallOnly
         returns (uint256)
     {
         IFountain fountain = _getFountain(token);
@@ -61,6 +68,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
     function withdraw(address token, uint256 amount)
         external
         payable
+        delegateCallOnly
         returns (uint256)
     {
         IFountain fountain = _getFountain(token);
@@ -84,7 +92,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         address token,
         IAngel[] calldata angels,
         address[] calldata tokensOut
-    ) external payable returns (uint256[] memory) {
+    ) external payable delegateCallOnly returns (uint256[] memory) {
         return _harvest(token, angels, tokensOut, true);
     }
 
@@ -97,7 +105,7 @@ contract ATrevi is ActionBase, DestructibleAction, ErrorMsg {
         address token,
         IAngel[] calldata angels,
         address[] calldata tokensOut
-    ) external payable returns (uint256[] memory) {
+    ) external payable delegateCallOnly returns (uint256[] memory) {
         return _harvest(token, angels, tokensOut, false);
     }
 

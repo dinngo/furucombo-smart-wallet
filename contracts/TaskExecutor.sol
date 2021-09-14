@@ -1,29 +1,30 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.6.0;
+pragma solidity 0.6.12;
 pragma experimental ABIEncoderV2;
 
 import "@openzeppelin/contracts/token/ERC20/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/Address.sol";
 import "./interfaces/ITaskExecutor.sol";
 import "./utils/DestructibleAction.sol";
+import "./utils/DelegateCallAction.sol";
 import "./lib/LibParam.sol";
 import "./Config.sol";
 
-contract TaskExecutor is ITaskExecutor, Config, DestructibleAction {
+contract TaskExecutor is
+    ITaskExecutor,
+    Config,
+    DestructibleAction,
+    DelegateCallAction
+{
     using Address for address;
     using SafeERC20 for IERC20;
     using LibParam for bytes32;
 
-    address private immutable self;
-
-    modifier delegateCallOnly() {
-        require(self != address(this), "TaskExecutor: Delegate call only");
-        _;
-    }
-
-    constructor(address payable _owner) public DestructibleAction(_owner) {
-        self = address(this);
-    }
+    constructor(address payable _owner)
+        public
+        DestructibleAction(_owner)
+        DelegateCallAction()
+    {}
 
     /**
      * @notice task execution function.
