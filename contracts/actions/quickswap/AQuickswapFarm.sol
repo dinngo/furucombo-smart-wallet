@@ -112,7 +112,7 @@ contract AQuickswapFarm is
         // get dQuick amount before harvest
         uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
 
-        // harvest (getReward)
+        // harvest
         stakingReward.getReward();
 
         // get dQuick amount after harvest
