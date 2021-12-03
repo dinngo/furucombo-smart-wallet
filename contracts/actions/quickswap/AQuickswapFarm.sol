@@ -44,7 +44,19 @@ contract AQuickswapFarm is
         harvestFee = _fee;
     }
 
-    /// @notice Harvest from Quickswap farming pool
+    /// @notice Stake LP token to liquidity mining pool.
+    /// @param token The LP token of Quickswap pool.
+    function stake(address token) external payable delegateCallOnly {
+        IStakingRewards stakingRewards = _getStakingRewardsContract(token);
+
+        uint256 lpAmount = IERC20(token).balanceOf(address(this));
+
+        _tokenApprove(token, address(stakingRewards), lpAmount);
+        stakingRewards.stake(lpAmount);
+        _tokenApproveZero(token, address(stakingRewards));
+    }
+
+    /// @notice Harvest from liquidity mining pool.
     /// @param token The LP token of Quickswap pool.
     /// @return The dQuick amounts.
     function getRewardAndCharge(address token)
@@ -62,7 +74,7 @@ contract AQuickswapFarm is
         return userReward.sub(fee);
     }
 
-    /// @notice Harvest from Quickswap farming pool
+    /// @notice Harvest from liquidity mining pool.
     /// @param token The LP token of Quickswap pool.
     /// @return The dQuick amounts.
     function getReward(address token)
@@ -75,8 +87,8 @@ contract AQuickswapFarm is
     }
 
     /// @notice Claim back Quick.
-    /// @return Amount of Quick
-    function dQuickLeave() public returns (uint256) {
+    /// @return Amount of Quick.
+    function dQuickLeave() external payable delegateCallOnly returns (uint256) {
         // get dQuick amount
         uint256 dQuickAmount = DQUICK.balanceOf(address(this));
 
@@ -92,6 +104,23 @@ contract AQuickswapFarm is
         return quickAmountAfter.sub(quickAmountBefore);
     }
 
+    /// @notice Withdraw from liquidity mining pool.
+    ///
+    /// @return lpAmount Amount of LP token.
+    /// @return reward Amount of dQuick.
+    function exit(address token)
+        external
+        payable
+        delegateCallOnly
+        returns (uint256 lpAmount, uint256 reward)
+    {
+        // get dQuick amount before exit
+        uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
+
+        // get dQuick amount after exit
+        uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
+    }
+
     /// @dev The fee to be charged.
     /// @param amount The amount.
     /// @return The amount to be charged.
@@ -100,24 +129,40 @@ contract AQuickswapFarm is
     }
 
     /// @notice Get rewards(harvest) from Quickswap pool
-    /// @param token The staking token of Quickswap pool.
+    /// @param token The LP token of Quickswap pool.
     /// @return The dQuick token amounts.
-    function _getReward(address token) internal returns (uint256) {
-        // get StakeReward contract from staking token
-        StakingRewardsInfo memory info =
-            stakingRewardsFactory.stakingRewardsInfoByStakingToken(token);
-
-        IStakingRewards stakingReward = IStakingRewards(info.stakingRewards);
+    function _getReward(address token) private returns (uint256) {
+        IStakingRewards stakingRewards = _getStakingRewardsContract(token);
 
         // get dQuick amount before harvest
         uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
 
         // harvest
-        stakingReward.getReward();
+        stakingRewards.getReward();
 
         // get dQuick amount after harvest
         uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
 
         return dQuickAmountAfter.sub(dQuickAmountBefore);
+    }
+
+    /// @notice get staking rewards contract from stakingRewardsFactory.
+    /// @param token The LP token of Quickswap pool.
+    /// @return The StakingRewards contract.
+    function _getStakingRewardsContract(address token)
+        private
+        view
+        returns (IStakingRewards)
+    {
+        StakingRewardsInfo memory info =
+            stakingRewardsFactory.stakingRewardsInfoByStakingToken(token);
+
+        _requireMsg(
+            info.stakingRewards != address(0),
+            "_getStakingRewardsContract",
+            "StakingRewards contract not found"
+        );
+
+        return IStakingRewards(info.stakingRewards);
     }
 }
