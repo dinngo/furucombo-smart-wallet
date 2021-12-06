@@ -56,7 +56,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   });
 
   describe('stake', function() {
-    it('stake lp token to mining pool', async function() {
+    it.only('stake lp token to mining pool', async function() {
       const lpAmount = ether('1');
 
       // prepare data
@@ -76,8 +76,10 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         data,
         {
           from: user,
-          value: dummyAmount,
         }
+      );
+      console.log(
+        (await this.lpToken.balanceOf.call(this.userProxy.address)).toString()
       );
     });
   });

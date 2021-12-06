@@ -9,12 +9,8 @@ struct StakingRewardsInfo {
 }
 
 interface IStakingRewardsFactory{
+    
     function stakingRewardsInfoByStakingToken(address token) external 
     view returns (StakingRewardsInfo memory);
 
-    function owner() external view returns (address);
-    
-    
-    // function stakingRewardsInfoByStakingToken(address token) external view returns (address, uint256, uint256);
-    
 }

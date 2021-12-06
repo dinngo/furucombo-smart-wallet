@@ -27,7 +27,7 @@ contract AQuickswapFarm is
     IDQuick public constant DQUICK =
         IDQuick(0xf28164A485B0B2C90639E47b0f377b4a438a16B1);
 
-    IStakingRewardsFactory stakingRewardsFactory =
+    IStakingRewardsFactory public constant stakingRewardsFactory =
         IStakingRewardsFactory(0x8aAA5e259F74c8114e0a471d9f2ADFc66Bfe09ed);
 
     address public immutable collector;
@@ -48,10 +48,11 @@ contract AQuickswapFarm is
     /// @param token The LP token of Quickswap pool.
     function stake(address token) external payable delegateCallOnly {
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
-        // uint256 lpAmount = IERC20(token).balanceOf(address(this));
-        // _tokenApprove(token, address(stakingRewards), lpAmount);
-        // stakingRewards.stake(lpAmount);
-        // _tokenApproveZero(token, address(stakingRewards));
+        uint256 lpAmount = IERC20(token).balanceOf(address(this));
+
+        _tokenApprove(token, address(stakingRewards), lpAmount);
+        stakingRewards.stake(lpAmount);
+        _tokenApproveZero(token, address(stakingRewards));
     }
 
     /// @notice Harvest from liquidity mining pool.
@@ -167,25 +168,15 @@ contract AQuickswapFarm is
         internal
         returns (IStakingRewards)
     {
-        // StakingRewardsInfo memory info =
-        // stakingRewardsFactory.stakingRewardsInfoByStakingToken(
-        //     0xf04adBF75cDFc5eD26eeA4bbbb991DB002036Bdd
-        // );
-        IERC20(token).balanceOf(msg.sender);
-        // stakingRewardsFactory.owner();
+        StakingRewardsInfo memory info =
+            stakingRewardsFactory.stakingRewardsInfoByStakingToken(token);
 
-        // // (address stakingRewards, uint256 rewardAmount, uint256 duration) =
-        //     stakingRewardsFactory.stakingRewardsInfoByStakingToken(
-        //         0xf04adBF75cDFc5eD26eeA4bbbb991DB002036Bdd
-        //     );
+        _requireMsg(
+            info.stakingRewards != address(0),
+            "_getStakingRewardsContract",
+            "StakingRewards contract not found"
+        );
 
-        // _requireMsg(
-        //     info.stakingRewards != address(0),
-        //     "_getStakingRewardsContract",
-        //     "StakingRewards contract not found"
-        // );
-
-        // return IStakingRewards(info.stakingRewards);
-        return IStakingRewards(0xACb9EB5B52F495F09bA98aC96D8e61257F3daE14);
+        return IStakingRewards(info.stakingRewards);
     }
 }
