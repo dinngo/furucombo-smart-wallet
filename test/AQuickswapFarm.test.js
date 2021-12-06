@@ -20,11 +20,11 @@ const TaskExecutor = artifacts.require('TaskExecutorMock');
 const IToken = artifacts.require('IERC20');
 
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
-  const stakingTokenAddress = QUICKSWAP_WMATIC_WETH;
-  const stakingTokenProvider = QUICKSWAP_WMATIC_WETH_PROVIDER;
-
+  const lpTokenAddress = QUICKSWAP_WMATIC_WETH;
+  const lpTokenProvider = QUICKSWAP_WMATIC_WETH_PROVIDER;
+  const dummyAmount = ether('0.01');
   before(async function() {
-    this.stakingToken = await IToken.at(stakingTokenAddress);
+    this.lpToken = await IToken.at(lpTokenAddress);
 
     // create QuickswapFarm action.
     this.fee = new BN('2000'); // 20% harvest fee
@@ -55,28 +55,28 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('get reward', function() {
-    it('normal', async function() {
-      const stakingAmount = ether('10');
+  describe('stake', function() {
+    it('stake lp token to mining pool', async function() {
+      const lpAmount = ether('1');
 
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'getReward', [this.stakingToken.address]),
+        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress]),
       ]);
 
-      // Send token to user dsproxy
-      await this.stakingToken.transfer(this.userProxy.address, stakingAmount, {
-        from: stakingTokenProvider,
+      // Send lp token to user dsproxy
+      await this.lpToken.transfer(this.userProxy.address, lpAmount, {
+        from: lpTokenProvider,
       });
 
-      // Execute
+      // stake
       const receipt = await this.userProxy.execute(
         this.executor.address,
         data,
         {
           from: user,
-          //   value: dummyAmount,
+          value: dummyAmount,
         }
       );
     });

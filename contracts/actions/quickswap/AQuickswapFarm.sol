@@ -48,12 +48,10 @@ contract AQuickswapFarm is
     /// @param token The LP token of Quickswap pool.
     function stake(address token) external payable delegateCallOnly {
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
-
-        uint256 lpAmount = IERC20(token).balanceOf(address(this));
-
-        _tokenApprove(token, address(stakingRewards), lpAmount);
-        stakingRewards.stake(lpAmount);
-        _tokenApproveZero(token, address(stakingRewards));
+        // uint256 lpAmount = IERC20(token).balanceOf(address(this));
+        // _tokenApprove(token, address(stakingRewards), lpAmount);
+        // stakingRewards.stake(lpAmount);
+        // _tokenApproveZero(token, address(stakingRewards));
     }
 
     /// @notice Harvest from liquidity mining pool.
@@ -149,36 +147,45 @@ contract AQuickswapFarm is
     function _getReward(address token) private returns (uint256) {
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
 
-        // get dQuick amount before harvest
+        // dQuick amount before harvest
         uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
 
         // harvest
         stakingRewards.getReward();
 
-        // get dQuick amount after harvest
+        // dQuick amount after harvest
         uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
 
         return dQuickAmountAfter.sub(dQuickAmountBefore);
     }
 
-    /// @notice get staking rewards contract in the Quickswap LP mining page.
-    /// @dev get staking rewards contract from stakingRewardsFactory.
+    /// @notice Get staking rewards contract in the Quickswap LP mining page.
+    /// @dev Get staking rewards contract from stakingRewardsFactory.
     /// @param token The LP token of Quickswap pool.
     /// @return The StakingRewards contract.
     function _getStakingRewardsContract(address token)
-        private
-        view
+        internal
         returns (IStakingRewards)
     {
-        StakingRewardsInfo memory info =
-            stakingRewardsFactory.stakingRewardsInfoByStakingToken(token);
+        // StakingRewardsInfo memory info =
+        // stakingRewardsFactory.stakingRewardsInfoByStakingToken(
+        //     0xf04adBF75cDFc5eD26eeA4bbbb991DB002036Bdd
+        // );
+        IERC20(token).balanceOf(msg.sender);
+        // stakingRewardsFactory.owner();
 
-        _requireMsg(
-            info.stakingRewards != address(0),
-            "_getStakingRewardsContract",
-            "StakingRewards contract not found"
-        );
+        // // (address stakingRewards, uint256 rewardAmount, uint256 duration) =
+        //     stakingRewardsFactory.stakingRewardsInfoByStakingToken(
+        //         0xf04adBF75cDFc5eD26eeA4bbbb991DB002036Bdd
+        //     );
 
-        return IStakingRewards(info.stakingRewards);
+        // _requireMsg(
+        //     info.stakingRewards != address(0),
+        //     "_getStakingRewardsContract",
+        //     "StakingRewards contract not found"
+        // );
+
+        // return IStakingRewards(info.stakingRewards);
+        return IStakingRewards(0xACb9EB5B52F495F09bA98aC96D8e61257F3daE14);
     }
 }
