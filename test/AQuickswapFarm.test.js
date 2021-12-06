@@ -1,4 +1,5 @@
-const { BN, ether } = require('@openzeppelin/test-helpers');
+const { BN, ether, expectRevert } = require('@openzeppelin/test-helpers');
+const { expect } = require('chai');
 
 const {
   DS_PROXY_REGISTRY,
@@ -56,19 +57,20 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   });
 
   describe('stake', function() {
-    it.only('stake lp token to mining pool', async function() {
+    beforeEach(async function() {
       const lpAmount = ether('1');
 
+      // Send LP token to user dsproxy
+      await this.lpToken.transfer(this.userProxy.address, lpAmount, {
+        from: lpTokenProvider,
+      });
+    });
+    it('stake LP token to mining pool', async function() {
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
         getCallData(AQuickswapFarm, 'stake', [lpTokenAddress]),
       ]);
-
-      // Send lp token to user dsproxy
-      await this.lpToken.transfer(this.userProxy.address, lpAmount, {
-        from: lpTokenProvider,
-      });
 
       // stake
       const receipt = await this.userProxy.execute(
@@ -78,8 +80,27 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
           from: user,
         }
       );
-      console.log(
-        (await this.lpToken.balanceOf.call(this.userProxy.address)).toString()
+
+      // After stake, LP token should be 0
+      const lpAmount = await this.lpToken.balanceOf.call(
+        this.userProxy.address
+      );
+      expect(lpAmount).to.be.bignumber.zero;
+    });
+
+    it('stake wrong LP token', async function() {
+      // prepare data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'stake', [dummy]),
+      ]);
+
+      // stake
+      await expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        '_getStakingRewardsContract: StakingRewards contract not found'
       );
     });
   });
