@@ -89,23 +89,23 @@ contract AQuickswapFarm is
     /// @notice Claim back Quick.
     /// @return Amount of Quick.
     function dQuickLeave() external payable delegateCallOnly returns (uint256) {
-        // get dQuick amount
+        // dQuick amount
         uint256 dQuickAmount = DQUICK.balanceOf(address(this));
 
-        // get Quick amount before leave
+        // Quick amount before leave
         uint256 quickAmountBefore = QUICK.balanceOf(address(this));
 
         // leave
         DQUICK.leave(dQuickAmount);
 
-        // get Quick amount after leave
+        // Quick amount after leave
         uint256 quickAmountAfter = QUICK.balanceOf(address(this));
 
         return quickAmountAfter.sub(quickAmountBefore);
     }
 
     /// @notice Withdraw from liquidity mining pool.
-    ///
+    /// @param token The LP token of Quickswap pool
     /// @return lpAmount Amount of LP token.
     /// @return reward Amount of dQuick.
     function exit(address token)
@@ -114,14 +114,29 @@ contract AQuickswapFarm is
         delegateCallOnly
         returns (uint256 lpAmount, uint256 reward)
     {
-        // get dQuick amount before exit
+        IStakingRewards stakingRewards = _getStakingRewardsContract(token);
+
+        // dQuick amount before exit
         uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
 
-        // get dQuick amount after exit
+        // LP token amount before exit
+        uint256 lpAmountBefore = IERC20(token).balanceOf(address(this));
+
+        stakingRewards.exit();
+
+        // dQuick amount after exit
         uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
+
+        // LP token amount after exit
+        uint256 lpAmountAfter = IERC20(token).balanceOf(address(this));
+
+        return (
+            lpAmountAfter.sub(lpAmountBefore),
+            dQuickAmountAfter.sub(dQuickAmountBefore)
+        );
     }
 
-    /// @dev The fee to be charged.
+    /// @notice The fee to be charged.
     /// @param amount The amount.
     /// @return The amount to be charged.
     function fee(uint256 amount) public view returns (uint256) {
@@ -146,7 +161,8 @@ contract AQuickswapFarm is
         return dQuickAmountAfter.sub(dQuickAmountBefore);
     }
 
-    /// @notice get staking rewards contract from stakingRewardsFactory.
+    /// @notice get staking rewards contract in the Quickswap LP mining page.
+    /// @dev get staking rewards contract from stakingRewardsFactory.
     /// @param token The LP token of Quickswap pool.
     /// @return The StakingRewards contract.
     function _getStakingRewardsContract(address token)
