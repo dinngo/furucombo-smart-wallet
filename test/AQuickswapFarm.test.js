@@ -14,6 +14,7 @@ const {
   profileGas,
   getCallData,
   getActionReturn,
+  expectEqWithinBps,
 } = require('./utils/utils');
 
 const AQuickswapFarm = artifacts.require('AQuickswapFarm');
@@ -79,17 +80,13 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress]),
+        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress, lpAmount]),
       ]);
 
       // stake
-      const receipt = await this.userProxy.execute(
-        this.executor.address,
-        data,
-        {
-          from: user,
-        }
-      );
+      await this.userProxy.execute(this.executor.address, data, {
+        from: user,
+      });
 
       // After stake, LP token should be 0
       const lpAmountAfter = await this.lpToken.balanceOf.call(
@@ -99,10 +96,11 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
     });
 
     it('stake without any LP token', async function() {
+      const lpSendAmount = ether('1');
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress]),
+        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress, lpSendAmount]),
       ]);
 
       // LP token should be 0
@@ -111,21 +109,20 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
       expect(lpAmount).to.be.bignumber.zero;
 
-      // stake
-      const receipt = await this.userProxy.execute(
-        this.executor.address,
-        data,
-        {
+      expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
           from: user,
-        }
+        }),
+        'stake: SafeERC20: low-level call failed'
       );
     });
 
     it('stake wrong LP token', async function() {
+      const lpAmount = ether('1');
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'stake', [dummy]),
+        getCallData(AQuickswapFarm, 'stake', [dummy, lpAmount]),
       ]);
 
       // stake
@@ -145,9 +142,9 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       await this.lpToken.transfer(this.userProxy.address, lpAmount, {
         from: lpTokenProvider,
       });
-      const data = getCallData(TaskExecutor, 'execMock', [
+      let data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'stake', [this.lpToken.address]),
+        getCallData(AQuickswapFarm, 'stake', [this.lpToken.address, lpAmount]),
       ]);
 
       // stake
@@ -168,6 +165,15 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       await this.lpToken.transfer(this.userProxy.address, ether('0.1'), {
         from: lpTokenProvider,
       });
+
+      data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'stake', [
+          this.lpToken.address,
+          ether('0.1'),
+        ]),
+      ]);
+
       await this.userProxy.execute(this.executor.address, data, {
         from: user,
       });
@@ -183,7 +189,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
 
     it('get reward', async function() {
       // expect reward
-      const expectRewards = await this.stakingRewardsContract.rewards.call(
+      const expectReward = await this.stakingRewardsContract.rewards.call(
         this.userProxy.address
       );
 
@@ -200,13 +206,42 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
           from: user,
         }
       );
-      const actionReturn = getActionReturn(receipt, ['uint256'])[0];
 
-      // reward should > 0
-      expect(actionReturn).to.be.bignumber.gt(ether('0'));
+      const userReward = getActionReturn(receipt, ['uint256'])[0];
 
       // reward should > expectRewards
-      expect(actionReturn).to.be.bignumber.gte(expectRewards);
+      expect(userReward).to.be.bignumber.gte(expectReward);
+    });
+
+    it('get reward and charge', async function() {
+      // total reward
+      const totalReward = await this.stakingRewardsContract.rewards.call(
+        this.userProxy.address
+      );
+
+      const expectUserReward = totalReward * 0.8;
+
+      console.log('totalReward:' + totalReward);
+      console.log('expectUserReward:' + expectUserReward);
+
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'getRewardAndCharge', [lpTokenAddress]),
+      ]);
+
+      // getRewardAndCharge
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+        }
+      );
+      const userReward = getActionReturn(receipt, ['uint256'])[0];
+      console.log('userReward:' + userReward);
+
+      // user reward should close to expectUserReward
+      expectEqWithinBps(userReward, expectUserReward.toString(), 5);
     });
   });
 });

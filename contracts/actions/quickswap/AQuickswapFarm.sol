@@ -46,15 +46,20 @@ contract AQuickswapFarm is
 
     /// @notice Stake LP token to liquidity mining pool.
     /// @param token The LP token of Quickswap pool.
-    function stake(address token) external payable delegateCallOnly {
+    function stake(address token, uint256 amount)
+        external
+        payable
+        delegateCallOnly
+    {
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
-        uint256 lpAmount = IERC20(token).balanceOf(address(this));
 
-        if (lpAmount > 0) {
-            _tokenApprove(token, address(stakingRewards), lpAmount);
-            stakingRewards.stake(lpAmount);
-            _tokenApproveZero(token, address(stakingRewards));
+        _tokenApprove(token, address(stakingRewards), amount);
+        try stakingRewards.stake(amount) {} catch Error(string memory reason) {
+            _revertMsg("stake", reason);
+        } catch {
+            _revertMsg("stake");
         }
+        _tokenApproveZero(token, address(stakingRewards));
     }
 
     /// @notice Harvest from liquidity mining pool.
