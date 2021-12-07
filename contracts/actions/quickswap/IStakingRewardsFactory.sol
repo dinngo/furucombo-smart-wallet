@@ -13,4 +13,8 @@ interface IStakingRewardsFactory{
     function stakingRewardsInfoByStakingToken(address token) external 
     view returns (StakingRewardsInfo memory);
 
+    function notifyRewardAmount(address stakingToken) external;
+
+    function update(address stakingToken, uint rewardAmount, uint256 rewardsDuration) external;
+
 }

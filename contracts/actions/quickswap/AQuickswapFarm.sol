@@ -50,9 +50,11 @@ contract AQuickswapFarm is
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
         uint256 lpAmount = IERC20(token).balanceOf(address(this));
 
-        _tokenApprove(token, address(stakingRewards), lpAmount);
-        stakingRewards.stake(lpAmount);
-        _tokenApproveZero(token, address(stakingRewards));
+        if (lpAmount > 0) {
+            _tokenApprove(token, address(stakingRewards), lpAmount);
+            stakingRewards.stake(lpAmount);
+            _tokenApproveZero(token, address(stakingRewards));
+        }
     }
 
     /// @notice Harvest from liquidity mining pool.
