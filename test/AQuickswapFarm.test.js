@@ -5,9 +5,7 @@ const {
   DS_PROXY_REGISTRY,
   QUICKSWAP_WETH_QUICK,
   QUICKSWAP_WETH_QUICK_PROVIDER,
-  QUICKSWAP_DEPLOYER,
   QUICKSWAP_DQUICK,
-  QUICKSWAP_DQUICK_PROVIDER,
 } = require('./utils/constants');
 
 const {
@@ -32,13 +30,15 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
   const dummyAmount = ether('0.01');
 
+  let stakingRewardsContract;
+
   before(async function() {
     this.lpToken = await IToken.at(lpTokenAddress);
-    this.dQuick = await IToken.at(QUICKSWAP_DQUICK);
+    // this.dQuick = await IToken.at(QUICKSWAP_DQUICK);
 
-    this.stakingRewards = await IStakingRewards.at(
-      '0x4b678cA360c5f53a2B0590e53079140F302A9DcD'
-    );
+    // this.stakingRewards = await IStakingRewards.at(
+    //   '0x4b678cA360c5f53a2B0590e53079140F302A9DcD'
+    // );
 
     this.stakingRewardsFactory = await IStakingRewardsFactory.at(
       '0x8aAA5e259F74c8114e0a471d9f2ADFc66Bfe09ed'
@@ -153,17 +153,13 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       });
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress]),
+        getCallData(AQuickswapFarm, 'stake', [this.lpToken.address]),
       ]);
 
       // stake
-      const receipt = await this.userProxy.execute(
-        this.executor.address,
-        data,
-        {
-          from: user,
-        }
-      );
+      await this.userProxy.execute(this.executor.address, data, {
+        from: user,
+      });
 
       // After stake, LP token should be 0
       const lpAmountAfter = await this.lpToken.balanceOf.call(
@@ -171,28 +167,29 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
       expect(lpAmountAfter).to.be.bignumber.zero;
 
-      //   await this.stakingRewardsFactory.update(
-      //     lpTokenAddress,
-      //     ether('100'),
-      //     10000,
-      //     {
-      //       from: QUICKSWAP_DEPLOYER,
-      //     }
-      //   );
+      await time.increase(time.duration.days(30));
 
-      //   // transfer dQuick to Factory
-      //   await this.dQuick.transfer(
-      //     this.stakingRewardsFactory.address,
-      //     ether('100'),
-      //     { from: QUICKSWAP_DQUICK_PROVIDER }
-      //   );
+      const stakingRewardsInfo = await this.stakingRewardsFactory.stakingRewardsInfoByStakingToken.call(
+        this.lpToken.address
+      );
+      console.log(stakingRewardsInfo.stakingRewards);
 
-      //   await this.stakingRewardsFactory.notifyRewardAmount(lpTokenAddress, {
-      //     from: QUICKSWAP_DEPLOYER,
-      //   });
+      this.stakingRewardsContract = await IStakingRewards.at(
+        stakingRewardsInfo.stakingRewards
+      );
+
+      // stake
+      await this.userProxy.execute(this.executor.address, data, {
+        from: user,
+      });
     });
 
-    it('get reward', async function() {
+    it.only('get reward', async function() {
+      const expectRewards = await this.stakingRewardsContract.rewards.call(
+        this.userProxy.address
+      );
+      console.log('expectRewards:' + JSON.stringify(expectRewards));
+
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
         getCallData(AQuickswapFarm, 'getReward', [lpTokenAddress]),
@@ -208,6 +205,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
       const actionReturn = getActionReturn(receipt, ['uint256'])[0];
       console.log('reward:' + JSON.stringify(actionReturn));
+
+      expect(actionReturn).to.be.bignumber.gt(ether('0'));
     });
   });
 });
