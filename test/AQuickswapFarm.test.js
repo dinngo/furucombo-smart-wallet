@@ -190,8 +190,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         from: user,
       });
 
-      // increase time 30 days in order to get reward
-      await time.increase(time.duration.days(30));
+      // increase time 14 days in order to get reward
+      await time.increase(time.duration.days(14));
 
       // stake again to force update expected reward
       await transferErc20Token(
@@ -282,65 +282,111 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
       expectEqWithinBps(collectorReward, expectCollectorReward.toString(), 5);
     });
+  });
 
-    describe('dQuick leave', async function() {
-      it('dQuick leave', async function() {
-        // transfer dQuick to user proxy
-        const dQuickAmount = ether('5');
-        await transferErc20Token(
-          this.dQuick.address,
-          QUICKSWAP_DQUICK_PROVIDER,
-          this.userProxy.address,
-          dQuickAmount
-        );
+  describe('dQuick leave', async function() {
+    it('dQuick leave', async function() {
+      // transfer dQuick to user proxy
+      const dQuickAmount = ether('5');
+      await transferErc20Token(
+        this.dQuick.address,
+        QUICKSWAP_DQUICK_PROVIDER,
+        this.userProxy.address,
+        dQuickAmount
+      );
 
-        // leave
-        const data = getCallData(TaskExecutor, 'execMock', [
-          this.aQuickswapFarm.address,
-          getCallData(AQuickswapFarm, 'dQuickLeave', []),
-        ]);
-        const receipt = await this.userProxy.execute(
-          this.executor.address,
-          data,
-          {
-            from: user,
-          }
-        );
-        const userQuickAmount = getActionReturn(receipt, ['uint256'])[0];
+      // leave
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'dQuickLeave', []),
+      ]);
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+        }
+      );
+      const userQuickAmount = getActionReturn(receipt, ['uint256'])[0];
 
-        // get estimate Quick amount
-        const estimateQuickAmount = await this.dQuick.dQUICKForQUICK.call(
-          dQuickAmount
-        );
+      // get estimate Quick amount
+      const estimateQuickAmount = await this.dQuick.dQUICKForQUICK.call(
+        dQuickAmount
+      );
 
-        // check
-        expectEqWithinBps(userQuickAmount, estimateQuickAmount, 5);
+      // check
+      expectEqWithinBps(userQuickAmount, estimateQuickAmount, 5);
+    });
+
+    it('revert without any dQuick', async function() {
+      // leave
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'dQuickLeave', []),
+      ]);
+
+      // should fail
+      expectRevert(
+        this.userProxy.execute(this.executor.address, data, {
+          from: user,
+        }),
+        'dQuickLeave: dQuick amount not enough'
+      );
+    });
+  });
+
+  describe('exit', async function() {
+    it.only('exit', async function() {
+      // transfer lp token
+      const lpAmount = ether('5');
+      await transferErc20Token(
+        this.lpToken.address,
+        lpTokenProvider,
+        this.userProxy.address,
+        lpAmount
+      );
+
+      // staking
+      let data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'stake', [this.lpToken.address, lpAmount]),
+      ]);
+
+      await this.userProxy.execute(this.executor.address, data, {
+        from: user,
       });
 
-      it('revert without any dQuick', async function() {
-        // leave
-        const data = getCallData(TaskExecutor, 'execMock', [
-          this.aQuickswapFarm.address,
-          getCallData(AQuickswapFarm, 'dQuickLeave', []),
-        ]);
+      // increase time 14 days in order to get reward
+      await time.increase(time.duration.days(14));
 
-        // should fail
-        expectRevert(
-          this.userProxy.execute(this.executor.address, data, {
-            from: user,
-          }),
-          'dQuickLeave: dQuick amount not enough'
-        );
-      });
+      // exit
+      data = getCallData(TaskExecutor, 'execMock', [
+        this.aQuickswapFarm.address,
+        getCallData(AQuickswapFarm, 'exit', [this.lpToken.address]),
+      ]);
 
-      describe('exit', async function() {
-        it('exit', async function() {
-          // transfer lp token
-          // staking
-          // exit
-          // check
-        });
-      });
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        {
+          from: user,
+        }
+      );
+      //const [userLPAmount, userReward]
+      const userLPAmount = await getErc20TokenBalance(
+        this.lpToken.address,
+        this.userProxy.address
+      );
+      const userReward = await getErc20TokenBalance(
+        QUICKSWAP_DQUICK,
+        this.userProxy.address
+      );
+      const a = getActionReturn(receipt, ['uint256', 'uint256']);
+      console.log('a:' + a[0]);
+      console.log('userReward:' + userReward);
+      console.log('userLPAmount:' + userLPAmount);
+
+      // check
     });
   });
 });
