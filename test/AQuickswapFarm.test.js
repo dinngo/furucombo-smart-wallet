@@ -98,10 +98,9 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   });
 
   describe('stake', function() {
-    it.only('stake LP token to mining pool', async function() {
-      const lpAmount = ether('1');
-
+    it('stake LP token to mining pool', async function() {
       // Send LP token to user dsproxy
+      const lpAmount = ether('1');
       await transferErc20Token(
         this.lpToken.address,
         lpTokenProvider,
@@ -109,11 +108,6 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         lpAmount
       );
 
-      // await this.lpToken.transfer(this.userProxy.address, lpAmount, {
-      //   from: lpTokenProvider,
-      // });
-
-      //await stakeLPToken(this.lpToken.address, lpAmount);
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
@@ -178,9 +172,14 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
     beforeEach(async function() {
       // stake token before each test.
       const lpAmount = ether('10');
-      await this.lpToken.transfer(this.userProxy.address, lpAmount, {
-        from: lpTokenProvider,
-      });
+
+      await transferErc20Token(
+        this.lpToken.address,
+        lpTokenProvider,
+        this.userProxy.address,
+        lpAmount
+      );
+
       let data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
         getCallData(AQuickswapFarm, 'stake', [this.lpToken.address, lpAmount]),
@@ -191,20 +190,16 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         from: user,
       });
 
-      // After stake, LP token should be 0
-      const lpAmountAfter = await getErc20TokenBalance(
-        this.lpToken.address,
-        this.userProxy.address
-      );
-      expect(lpAmountAfter).to.be.bignumber.zero;
-
       // increase time 30 days in order to get reward
       await time.increase(time.duration.days(30));
 
       // stake again to force update expected reward
-      await this.lpToken.transfer(this.userProxy.address, ether('0.1'), {
-        from: lpTokenProvider,
-      });
+      await transferErc20Token(
+        this.lpToken.address,
+        lpTokenProvider,
+        this.userProxy.address,
+        ether('0.1')
+      );
 
       data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
@@ -292,9 +287,12 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       it('dQuick leave', async function() {
         // transfer dQuick to user proxy
         const dQuickAmount = ether('5');
-        this.dQuick.transfer(this.userProxy.address, dQuickAmount, {
-          from: QUICKSWAP_DQUICK_PROVIDER,
-        });
+        await transferErc20Token(
+          this.dQuick.address,
+          QUICKSWAP_DQUICK_PROVIDER,
+          this.userProxy.address,
+          dQuickAmount
+        );
 
         // leave
         const data = getCallData(TaskExecutor, 'execMock', [
