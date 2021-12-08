@@ -97,6 +97,11 @@ contract AQuickswapFarm is
     function dQuickLeave() external payable delegateCallOnly returns (uint256) {
         // dQuick amount
         uint256 dQuickAmount = DQUICK.balanceOf(address(this));
+        _requireMsg(
+            dQuickAmount > 0,
+            "dQuickLeave",
+            "dQuick amount not enough"
+        );
 
         // Quick amount before leave
         uint256 quickAmountBefore = QUICK.balanceOf(address(this));
@@ -185,6 +190,7 @@ contract AQuickswapFarm is
     /// @return The StakingRewards contract.
     function _getStakingRewardsContract(address token)
         internal
+        view
         returns (IStakingRewards)
     {
         StakingRewardsInfo memory info =

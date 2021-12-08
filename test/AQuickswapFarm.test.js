@@ -6,6 +6,7 @@ const {
   QUICKSWAP_WETH_QUICK,
   QUICKSWAP_WETH_QUICK_PROVIDER,
   QUICKSWAP_DQUICK,
+  QUICKSWAP_DQUICK_PROVIDER,
 } = require('./utils/constants');
 
 const {
@@ -22,33 +23,54 @@ const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 const TaskExecutor = artifacts.require('TaskExecutorMock');
 const IToken = artifacts.require('IERC20');
+const IDQuick = artifacts.require('IDQuick');
 
 const IStakingRewards = artifacts.require('IStakingRewards');
 const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
-async function getErc20TokenBalance(token, owner) {
-  const erc20Token = await IToken.at(token);
-  const balance = await erc20Token.balanceOf.call(owner);
+async function getErc20TokenBalance(tokenAddr, owner) {
+  const IErc20Token = await IToken.at(tokenAddr);
+  const balance = await IErc20Token.balanceOf.call(owner);
 
   return balance;
 }
+
+async function transferErc20Token(tokenAddr, from, to, amount) {
+  const IErc20Token = await IToken.at(tokenAddr);
+  await IErc20Token.transfer(to, amount, {
+    from: from,
+  });
+}
+
+// async function stakeLPToken(lpTokenAddr, stakingAmount) {
+//   console.log('1');
+//   let data = getCallData(TaskExecutor, 'execMock', [
+//     aQuickswapFarm.address,
+//     getCallData(AQuickswapFarm, 'stake', [lpTokenAddr, stakingAmount]),
+//   ]);
+//   console.log('2');
+//   await this.userProxy.execute(this.executor.address, data, {
+//     from: user,
+//   });
+//   console.log('3');
+// }
 
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
   const dummyAmount = ether('0.01');
+  const fee = new BN('2000'); // 20% harvest fee
 
   before(async function() {
     this.lpToken = await IToken.at(lpTokenAddress);
-    // this.dQuick = await IToken.at(QUICKSWAP_DQUICK);
+    this.dQuick = await IDQuick.at(QUICKSWAP_DQUICK);
 
     this.stakingRewardsFactory = await IStakingRewardsFactory.at(
       '0x8aAA5e259F74c8114e0a471d9f2ADFc66Bfe09ed'
     );
 
     // create QuickswapFarm action.
-    this.fee = new BN('2000'); // 20% harvest fee
-    this.aQuickswapFarm = await AQuickswapFarm.new(owner, collector, this.fee);
+    this.aQuickswapFarm = await AQuickswapFarm.new(owner, collector, fee);
 
     // Create user dsproxy
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
@@ -76,14 +98,22 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   });
 
   describe('stake', function() {
-    it('stake LP token to mining pool', async function() {
+    it.only('stake LP token to mining pool', async function() {
       const lpAmount = ether('1');
 
       // Send LP token to user dsproxy
-      await this.lpToken.transfer(this.userProxy.address, lpAmount, {
-        from: lpTokenProvider,
-      });
+      await transferErc20Token(
+        this.lpToken.address,
+        lpTokenProvider,
+        this.userProxy.address,
+        lpAmount
+      );
 
+      // await this.lpToken.transfer(this.userProxy.address, lpAmount, {
+      //   from: lpTokenProvider,
+      // });
+
+      //await stakeLPToken(this.lpToken.address, lpAmount);
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
@@ -95,7 +125,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         from: user,
       });
 
-      // After stake, LP token should be 0
+      // After stake all amount, LP token should be 0
       const lpAmountAfter = await getErc20TokenBalance(
         this.lpToken.address,
         this.userProxy.address
@@ -103,7 +133,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       expect(lpAmountAfter).to.be.bignumber.zero;
     });
 
-    it('stake without any LP token', async function() {
+    it('revert with zero LP token', async function() {
       const lpSendAmount = ether('1');
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
@@ -126,7 +156,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('stake wrong LP token', async function() {
+    it('revert with staking wrong LP token', async function() {
       const lpAmount = ether('1');
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
@@ -256,6 +286,63 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         collector
       );
       expectEqWithinBps(collectorReward, expectCollectorReward.toString(), 5);
+    });
+
+    describe('dQuick leave', async function() {
+      it('dQuick leave', async function() {
+        // transfer dQuick to user proxy
+        const dQuickAmount = ether('5');
+        this.dQuick.transfer(this.userProxy.address, dQuickAmount, {
+          from: QUICKSWAP_DQUICK_PROVIDER,
+        });
+
+        // leave
+        const data = getCallData(TaskExecutor, 'execMock', [
+          this.aQuickswapFarm.address,
+          getCallData(AQuickswapFarm, 'dQuickLeave', []),
+        ]);
+        const receipt = await this.userProxy.execute(
+          this.executor.address,
+          data,
+          {
+            from: user,
+          }
+        );
+        const userQuickAmount = getActionReturn(receipt, ['uint256'])[0];
+
+        // get estimate Quick amount
+        const estimateQuickAmount = await this.dQuick.dQUICKForQUICK.call(
+          dQuickAmount
+        );
+
+        // check
+        expectEqWithinBps(userQuickAmount, estimateQuickAmount, 5);
+      });
+
+      it('revert without any dQuick', async function() {
+        // leave
+        const data = getCallData(TaskExecutor, 'execMock', [
+          this.aQuickswapFarm.address,
+          getCallData(AQuickswapFarm, 'dQuickLeave', []),
+        ]);
+
+        // should fail
+        expectRevert(
+          this.userProxy.execute(this.executor.address, data, {
+            from: user,
+          }),
+          'dQuickLeave: dQuick amount not enough'
+        );
+      });
+
+      describe('exit', async function() {
+        it('exit', async function() {
+          // transfer lp token
+          // staking
+          // exit
+          // check
+        });
+      });
     });
   });
 });
