@@ -26,6 +26,13 @@ const IToken = artifacts.require('IERC20');
 const IStakingRewards = artifacts.require('IStakingRewards');
 const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
+async function getErc20TokenBalance(token, owner) {
+  const erc20Token = await IToken.at(token);
+  const balance = await erc20Token.balanceOf.call(owner);
+
+  return balance;
+}
+
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
@@ -89,7 +96,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       });
 
       // After stake, LP token should be 0
-      const lpAmountAfter = await this.lpToken.balanceOf.call(
+      const lpAmountAfter = await getErc20TokenBalance(
+        this.lpToken.address,
         this.userProxy.address
       );
       expect(lpAmountAfter).to.be.bignumber.zero;
@@ -104,7 +112,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       ]);
 
       // LP token should be 0
-      const lpAmount = await this.lpToken.balanceOf.call(
+      const lpAmount = await getErc20TokenBalance(
+        this.lpToken.address,
         this.userProxy.address
       );
       expect(lpAmount).to.be.bignumber.zero;
@@ -153,7 +162,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       });
 
       // After stake, LP token should be 0
-      const lpAmountAfter = await this.lpToken.balanceOf.call(
+      const lpAmountAfter = await getErc20TokenBalance(
+        this.lpToken.address,
         this.userProxy.address
       );
       expect(lpAmountAfter).to.be.bignumber.zero;
@@ -220,9 +230,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
 
       const expectUserReward = totalReward * 0.8;
-
-      console.log('totalReward:' + totalReward);
-      console.log('expectUserReward:' + expectUserReward);
+      const expectCollectorReward = totalReward - expectUserReward;
 
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
@@ -237,11 +245,17 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
           from: user,
         }
       );
-      const userReward = getActionReturn(receipt, ['uint256'])[0];
-      console.log('userReward:' + userReward);
 
       // user reward should close to expectUserReward
+      const userReward = getActionReturn(receipt, ['uint256'])[0];
       expectEqWithinBps(userReward, expectUserReward.toString(), 5);
+
+      // collector reward should close to expectCollectorReward
+      const collectorReward = await getErc20TokenBalance(
+        QUICKSWAP_DQUICK,
+        collector
+      );
+      expectEqWithinBps(collectorReward, expectCollectorReward.toString(), 5);
     });
   });
 });

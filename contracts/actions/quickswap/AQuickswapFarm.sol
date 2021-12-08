@@ -102,7 +102,11 @@ contract AQuickswapFarm is
         uint256 quickAmountBefore = QUICK.balanceOf(address(this));
 
         // leave
-        DQUICK.leave(dQuickAmount);
+        try DQUICK.leave(dQuickAmount) {} catch Error(string memory reason) {
+            _revertMsg("dQuickLeave", reason);
+        } catch {
+            _revertMsg("dQuickLeave");
+        }
 
         // Quick amount after leave
         uint256 quickAmountAfter = QUICK.balanceOf(address(this));
@@ -128,7 +132,11 @@ contract AQuickswapFarm is
         // LP token amount before exit
         uint256 lpAmountBefore = IERC20(token).balanceOf(address(this));
 
-        stakingRewards.exit();
+        try stakingRewards.exit() {} catch Error(string memory reason) {
+            _revertMsg("exit", reason);
+        } catch {
+            _revertMsg("exit");
+        }
 
         // dQuick amount after exit
         uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
@@ -158,8 +166,12 @@ contract AQuickswapFarm is
         // dQuick amount before harvest
         uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
 
-        // harvest
-        stakingRewards.getReward();
+        // getReward
+        try stakingRewards.getReward() {} catch Error(string memory reason) {
+            _revertMsg("_getReward", reason);
+        } catch {
+            _revertMsg("_getReward");
+        }
 
         // dQuick amount after harvest
         uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
