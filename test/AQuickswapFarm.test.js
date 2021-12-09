@@ -58,7 +58,6 @@ async function transferErc20Token(tokenAddr, from, to, amount) {
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
-  const dummyAmount = ether('0.01');
   const fee = new BN('2000'); // 20% harvest fee
 
   before(async function() {
@@ -136,11 +135,10 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
     });
 
     it('revert with zero LP token', async function() {
-      const lpSendAmount = ether('1');
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress, lpSendAmount]),
+        getCallData(AQuickswapFarm, 'stake', [lpTokenAddress, ether('1')]),
       ]);
 
       // LP token should be 0
@@ -224,13 +222,13 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
 
       const userReward = getActionReturn(receipt, ['uint256'])[0];
 
-      // reward should > expectRewards
+      // reward should >= expectRewards
       expect(userReward).to.be.bignumber.gte(expectReward);
     });
 
     it('get reward and charge', async function() {
       // total reward
-      const totalReward = await this.stakingRewardsContract.rewards.call(
+      const totalReward = await this.stakingRewardsContract.earned.call(
         this.userProxy.address
       );
 

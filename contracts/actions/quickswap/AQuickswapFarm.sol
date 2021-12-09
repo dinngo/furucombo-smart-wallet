@@ -46,6 +46,7 @@ contract AQuickswapFarm is
 
     /// @notice Stake LP token to liquidity mining pool.
     /// @param token The LP token of Quickswap pool.
+    /// @param amount The staking amount.
     function stake(address token, uint256 amount)
         external
         payable
@@ -71,13 +72,13 @@ contract AQuickswapFarm is
         delegateCallOnly
         returns (uint256)
     {
-        uint256 userReward = _getReward(token);
+        uint256 reward = _getReward(token);
 
         // charge fee.
-        uint256 fee = fee(userReward);
+        uint256 fee = fee(reward);
         DQUICK.transfer(collector, fee);
 
-        return userReward.sub(fee);
+        return reward.sub(fee);
     }
 
     /// @notice Harvest from liquidity mining pool.
@@ -120,7 +121,7 @@ contract AQuickswapFarm is
     }
 
     /// @notice Withdraw from liquidity mining pool.
-    /// @param token The LP token of Quickswap pool
+    /// @param token The LP token of Quickswap pool.
     /// @return lpAmount Amount of LP token.
     /// @return reward Amount of dQuick.
     function exit(address token)
@@ -162,7 +163,7 @@ contract AQuickswapFarm is
         return (amount.mul(harvestFee)).div(FEE_BASE);
     }
 
-    /// @notice Get rewards(harvest) from Quickswap pool
+    /// @notice Get rewards(harvest) from liquidity mining pool.
     /// @param token The LP token of Quickswap pool.
     /// @return The dQuick token amounts.
     function _getReward(address token) private returns (uint256) {
@@ -184,7 +185,7 @@ contract AQuickswapFarm is
         return dQuickAmountAfter.sub(dQuickAmountBefore);
     }
 
-    /// @notice Get staking rewards contract in the Quickswap LP mining page.
+    /// @notice Get staking rewards contract in the LP mining page.
     /// @dev Get staking rewards contract from stakingRewardsFactory.
     /// @param token The LP token of Quickswap pool.
     /// @return The StakingRewards contract.
