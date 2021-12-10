@@ -42,19 +42,6 @@ async function transferErc20Token(tokenAddr, from, to, amount) {
   });
 }
 
-// async function stakeLPToken(lpTokenAddr, stakingAmount) {
-//   console.log('1');
-//   let data = getCallData(TaskExecutor, 'execMock', [
-//     aQuickswapFarm.address,
-//     getCallData(AQuickswapFarm, 'stake', [lpTokenAddr, stakingAmount]),
-//   ]);
-//   console.log('2');
-//   await this.userProxy.execute(this.executor.address, data, {
-//     from: user,
-//   });
-//   console.log('3');
-// }
-
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
