@@ -1,4 +1,10 @@
-const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
+const {
+  BN,
+  ether,
+  expectRevert,
+  time,
+  constants,
+} = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
 const {
@@ -48,6 +54,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const fee = new BN('2000'); // 20% harvest fee
 
   before(async function() {
+    initialEvmId = await evmSnapshot();
+
     this.lpToken = await IToken.at(lpTokenAddress);
     this.dQuick = await IDQuick.at(QUICKSWAP_DQUICK);
 
@@ -68,7 +76,10 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
 
     // Create user dsproxy
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    await this.dsRegistry.build(user);
+    const dsProxyAddr = await this.dsRegistry.proxies.call(user);
+    if (dsProxyAddr == constants.ZERO_ADDRESS) {
+      await this.dsRegistry.build(user);
+    }
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
@@ -83,6 +94,10 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
 
   afterEach(async function() {
     await evmRevert(id);
+  });
+
+  after(async function() {
+    await evmRevert(initialEvmId);
   });
 
   describe('collector', function() {
