@@ -21,10 +21,10 @@ contract AQuickswapFarm is
     using SafeERC20 for IERC20;
     using SafeMath for uint256;
 
-    IERC20 public constant QUICK =
+    IERC20 public constant quick =
         IERC20(0x831753DD7087CaC61aB5644b308642cc1c33Dc13);
 
-    IDQuick public constant DQUICK =
+    IDQuick public constant dQuick =
         IDQuick(0xf28164A485B0B2C90639E47b0f377b4a438a16B1);
 
     IStakingRewardsFactory public constant stakingRewardsFactory =
@@ -76,7 +76,7 @@ contract AQuickswapFarm is
 
         // charge fee.
         uint256 fee = fee(reward);
-        DQUICK.transfer(collector, fee);
+        dQuick.transfer(collector, fee);
 
         return reward.sub(fee);
     }
@@ -97,7 +97,7 @@ contract AQuickswapFarm is
     /// @return Amount of Quick.
     function dQuickLeave() external payable delegateCallOnly returns (uint256) {
         // dQuick amount
-        uint256 dQuickAmount = DQUICK.balanceOf(address(this));
+        uint256 dQuickAmount = dQuick.balanceOf(address(this));
         _requireMsg(
             dQuickAmount > 0,
             "dQuickLeave",
@@ -105,17 +105,17 @@ contract AQuickswapFarm is
         );
 
         // Quick amount before leave
-        uint256 quickAmountBefore = QUICK.balanceOf(address(this));
+        uint256 quickAmountBefore = quick.balanceOf(address(this));
 
         // leave
-        try DQUICK.leave(dQuickAmount) {} catch Error(string memory reason) {
+        try dQuick.leave(dQuickAmount) {} catch Error(string memory reason) {
             _revertMsg("dQuickLeave", reason);
         } catch {
             _revertMsg("dQuickLeave");
         }
 
         // Quick amount after leave
-        uint256 quickAmountAfter = QUICK.balanceOf(address(this));
+        uint256 quickAmountAfter = quick.balanceOf(address(this));
 
         return quickAmountAfter.sub(quickAmountBefore);
     }
@@ -133,7 +133,7 @@ contract AQuickswapFarm is
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
 
         // dQuick amount before exit
-        uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
+        uint256 dQuickAmountBefore = dQuick.balanceOf(address(this));
 
         // LP token amount before exit
         uint256 lpAmountBefore = IERC20(token).balanceOf(address(this));
@@ -145,7 +145,7 @@ contract AQuickswapFarm is
         }
 
         // dQuick amount after exit
-        uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
+        uint256 dQuickAmountAfter = dQuick.balanceOf(address(this));
 
         // LP token amount after exit
         uint256 lpAmountAfter = IERC20(token).balanceOf(address(this));
@@ -170,7 +170,7 @@ contract AQuickswapFarm is
         IStakingRewards stakingRewards = _getStakingRewardsContract(token);
 
         // dQuick amount before harvest
-        uint256 dQuickAmountBefore = DQUICK.balanceOf(address(this));
+        uint256 dQuickAmountBefore = dQuick.balanceOf(address(this));
 
         // getReward
         try stakingRewards.getReward() {} catch Error(string memory reason) {
@@ -180,7 +180,7 @@ contract AQuickswapFarm is
         }
 
         // dQuick amount after harvest
-        uint256 dQuickAmountAfter = DQUICK.balanceOf(address(this));
+        uint256 dQuickAmountAfter = dQuick.balanceOf(address(this));
 
         return dQuickAmountAfter.sub(dQuickAmountBefore);
     }
