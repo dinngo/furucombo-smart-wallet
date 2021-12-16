@@ -94,21 +94,20 @@ contract AQuickswapFarm is
     }
 
     /// @notice Claim back Quick.
+    /// @param amount The amount of dQuick
     /// @return Amount of Quick.
-    function dQuickLeave() external payable delegateCallOnly returns (uint256) {
-        // dQuick amount
-        uint256 dQuickAmount = dQuick.balanceOf(address(this));
-        _requireMsg(
-            dQuickAmount > 0,
-            "dQuickLeave",
-            "dQuick amount not enough"
-        );
-
+    function dQuickLeave(uint256 amount)
+        external
+        payable
+        delegateCallOnly
+        returns (uint256)
+    {
+        _requireMsg(amount > 0, "dQuickLeave", "amount is 0");
         // Quick amount before leave
         uint256 quickAmountBefore = quick.balanceOf(address(this));
 
         // leave
-        try dQuick.leave(dQuickAmount) {} catch Error(string memory reason) {
+        try dQuick.leave(amount) {} catch Error(string memory reason) {
             _revertMsg("dQuickLeave", reason);
         } catch {
             _revertMsg("dQuickLeave");

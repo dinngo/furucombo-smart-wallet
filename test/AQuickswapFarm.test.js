@@ -278,7 +278,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       // leave
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'dQuickLeave', []),
+        getCallData(AQuickswapFarm, 'dQuickLeave', [dQuickAmount]),
       ]);
       const receipt = await this.userProxy.execute(
         this.executor.address,
@@ -302,7 +302,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       // leave
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
-        getCallData(AQuickswapFarm, 'dQuickLeave', []),
+        getCallData(AQuickswapFarm, 'dQuickLeave', [0]),
       ]);
 
       // should fail
@@ -310,7 +310,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        'dQuickLeave: dQuick amount not enough'
+        'dQuickLeave: amount is 0'
       );
     });
   });
