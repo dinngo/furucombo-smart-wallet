@@ -102,7 +102,7 @@ contract AQuickswapFarm is
         delegateCallOnly
         returns (uint256)
     {
-        _requireMsg(amount > 0, "dQuickLeave", "amount is 0");
+        _requireMsg(amount > 0, "dQuickLeave", "zero amount");
         // Quick amount before leave
         uint256 quickAmountBefore = quick.balanceOf(address(this));
 
