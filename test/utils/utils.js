@@ -118,6 +118,14 @@ function getCallActionData(ethValue, contract, funcName, params) {
   );
 }
 
+function expectEqWithinBps(actual, expected, bps = 1) {
+  const base = new BN('10000');
+  const upper = new BN(expected).mul(base.add(new BN(bps))).div(base);
+  const lower = new BN(expected).mul(base.sub(new BN(bps))).div(base);
+  expect(actual).to.be.bignumber.lte(upper);
+  expect(actual).to.be.bignumber.gte(lower);
+}
+
 module.exports = {
   profileGas,
   evmSnapshot,
@@ -131,4 +139,5 @@ module.exports = {
   getCallData,
   getCreated,
   getCallActionData,
+  expectEqWithinBps,
 };
