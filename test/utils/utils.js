@@ -8,8 +8,8 @@ function profileGas(receipt) {
     if (element.event === 'DeltaGas')
       console.log(
         web3.utils.hexToAscii(element.args.tag) +
-          ': ' +
-          element.args.gas.toString()
+        ': ' +
+        element.args.gas.toString()
       );
   });
 }
@@ -118,6 +118,17 @@ function getCallActionData(ethValue, contract, funcName, params) {
   );
 }
 
+async function impersonateAndInjectEther(address) {
+  // Impersonate pair
+  await network.provider.send('hardhat_impersonateAccount', [address]);
+
+  // Inject 1 ether
+  await network.provider.send('hardhat_setBalance', [
+    address,
+    '0xde0b6b3a7640000',
+  ]);
+}
+
 module.exports = {
   profileGas,
   evmSnapshot,
@@ -131,4 +142,5 @@ module.exports = {
   getCallData,
   getCreated,
   getCallActionData,
+  impersonateAndInjectEther,
 };

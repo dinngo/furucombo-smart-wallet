@@ -1,5 +1,6 @@
 const {
   balance,
+  constants,
   ether,
   expectRevert,
   send,
@@ -10,7 +11,6 @@ const {
   FURUCOMBO_REGISTRY,
   FURUCOMBO_REGISTRY_OWNER,
   FURUCOMBO_PROXY,
-  FURUCOMBO_HFUNDS,
   FURUCOMBO_HQUICKSWAP,
   NATIVE_TOKEN,
   WMATIC_TOKEN,
@@ -25,6 +25,7 @@ const {
   profileGas,
   getActionReturn,
   getCallData,
+  impersonateAndInjectEther,
 } = require('./utils/utils');
 const { BN } = require('@openzeppelin/test-helpers/src/setup');
 
@@ -36,12 +37,12 @@ const HFunds = artifacts.require('HFunds');
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 
-contract('AFurucombo', function([_, owner, user]) {
+contract('AFurucombo', function ([_, owner, user]) {
   const tokenAddress = WETH_TOKEN;
   const tokenProvider = WETH_PROVIDER;
   const tokenOutAddress = DAI_TOKEN;
 
-  before(async function() {
+  before(async function () {
     // Create actions
     this.executor = await TaskExecutor.new(owner);
     this.aFurucombo = await AFurucombo.new(owner, FURUCOMBO_PROXY);
@@ -53,6 +54,11 @@ contract('AFurucombo', function([_, owner, user]) {
     this.hFunds = await HFunds.new();
     this.registry = await IRegistry.at(FURUCOMBO_REGISTRY);
     await send.ether(user, FURUCOMBO_REGISTRY_OWNER, ether('1'));
+
+    //impersonate address
+    await impersonateAndInjectEther(tokenProvider);
+    await impersonateAndInjectEther(FURUCOMBO_REGISTRY_OWNER);
+
     await this.registry.register(
       this.hFunds.address,
       '0x0000000000000000000000000000000000000000000000000000000000000001',
@@ -66,23 +72,26 @@ contract('AFurucombo', function([_, owner, user]) {
 
     // Create user dsproxy
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    await this.dsRegistry.build(user);
+    const dsProxyAddr = await this.dsRegistry.proxies.call(user);
+    if (dsProxyAddr == constants.ZERO_ADDRESS) {
+      await this.dsRegistry.build(user);
+    }
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
     this.furucomboTokenDust = new BN(10);
   });
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     id = await evmSnapshot();
   });
 
-  afterEach(async function() {
+  afterEach(async function () {
     await evmRevert(id);
   });
 
-  describe('inject and batchExec', function() {
-    it('swap native and token to token', async function() {
+  describe('inject and batchExec', function () {
+    it('swap native and token to token', async function () {
       const tokensIn = [NATIVE_TOKEN, this.token.address];
       const amountsIn = [ether('2'), ether('1')];
       const tokensOut = [this.tokenOut.address];
@@ -163,7 +172,7 @@ contract('AFurucombo', function([_, owner, user]) {
       profileGas(receipt);
     });
 
-    it('swap token to native and token', async function() {
+    it('swap token to native and token', async function () {
       const tokensIn = [this.token.address];
       const amountsIn = [ether('1')];
       const tokensOut = [NATIVE_TOKEN, this.tokenOut.address];
@@ -247,7 +256,7 @@ contract('AFurucombo', function([_, owner, user]) {
       profileGas(receipt);
     });
 
-    it('remaining tokens < token dust', async function() {
+    it('remaining tokens < token dust', async function () {
       const amountIn = this.furucomboTokenDust.sub(new BN(1));
       const tokensIn = [this.token.address];
       const amountsIn = [amountIn];
@@ -284,7 +293,7 @@ contract('AFurucombo', function([_, owner, user]) {
       expect(tokenFurucomboAfter).to.be.bignumber.eq(amountIn);
     });
 
-    it('should revert: inconsistent length', async function() {
+    it('should revert: inconsistent length', async function () {
       const tokensIn = [this.token.address];
       const amountsIn = [ether('1'), ether('1')];
       const tokensOut = [];
@@ -317,7 +326,7 @@ contract('AFurucombo', function([_, owner, user]) {
       );
     });
 
-    it('should revert: remaining tokens >= token dust', async function() {
+    it('should revert: remaining tokens >= token dust', async function () {
       const tokensIn = [this.token.address];
       const amountsIn = [this.furucomboTokenDust];
       const tokensOut = [];
@@ -351,8 +360,8 @@ contract('AFurucombo', function([_, owner, user]) {
     });
   });
 
-  describe('destroy', function() {
-    it('normal', async function() {
+  describe('destroy', function () {
+    it('normal', async function () {
       await this.aFurucombo.destroy({ from: owner });
       expect(await web3.eth.getCode(this.aFurucombo.address)).eq('0x');
     });

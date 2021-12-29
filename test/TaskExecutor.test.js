@@ -24,37 +24,40 @@ const IDSProxy = artifacts.require('IDSProxy');
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const TaskExecutor = artifacts.require('TaskExecutor');
 
-contract('TaskExecutor', function([_, user, someone]) {
+contract('TaskExecutor', function ([_, user, someone]) {
   let id;
   let balanceUser;
   let balanceSomeone;
 
-  before(async function() {
+  before(async function () {
     this.dsProxyRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     this.taskExecutor = await TaskExecutor.new(_);
     this.foo = await Foo.new();
     this.fooAction = await FooAction.new();
 
     // Build user DSProxy
-    await this.dsProxyRegistry.build(user);
+    const dsProxyAddr = await this.dsProxyRegistry.proxies.call(user);
+    if (dsProxyAddr == constants.ZERO_ADDRESS) {
+      await this.dsProxyRegistry.build(user);
+    }
     this.userProxy = await IDSProxy.at(
       await this.dsProxyRegistry.proxies.call(user)
     );
   });
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     id = await evmSnapshot();
     balanceUser = await tracker(user);
     balanceSomeone = await tracker(someone);
   });
 
-  afterEach(async function() {
+  afterEach(async function () {
     await evmRevert(id);
   });
 
-  describe('execute', function() {
-    describe('execute by delegate call', function() {
-      it('single action', async function() {
+  describe('execute', function () {
+    describe('execute by delegate call', function () {
+      it('single action', async function () {
         // Prepare action data
         const expectNValue = new BN(101);
         const actionData = getCallData(FooAction, 'barUint1', [
@@ -78,7 +81,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
       });
 
-      it('multiple actions', async function() {
+      it('multiple actions', async function () {
         // Prepare action data
         const expectNValue = new BN(101);
         const actionAData = getCallData(FooAction, 'barUint1', [
@@ -110,7 +113,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).to.be.eq(expectBValue);
       });
 
-      it('payable action', async function() {
+      it('payable action', async function () {
         var balanceFoo = await tracker(this.foo.address);
 
         // Prepare action data
@@ -139,7 +142,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await balanceFoo.delta()).to.be.bignumber.eq(value);
       });
 
-      it('should revert: no contract code', async function() {
+      it('should revert: no contract code', async function () {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
@@ -165,7 +168,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: action revert', async function() {
+      it('should revert: action revert', async function () {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
@@ -187,7 +190,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: non existed function', async function() {
+      it('should revert: non existed function', async function () {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
@@ -207,11 +210,11 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Address: delegate call to non-contract.'
+          'Address: delegate call to non-contract'
         );
       });
 
-      it('should revert: delegate call only', async function() {
+      it('should revert: delegate call only', async function () {
         await expectRevert(
           this.taskExecutor.batchExec([], [], [], {
             from: user,
@@ -221,7 +224,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: tos and datas length are inconsistent', async function() {
+      it('should revert: tos and datas length are inconsistent', async function () {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
@@ -247,7 +250,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: tos and configs length are inconsistent', async function() {
+      it('should revert: tos and configs length are inconsistent', async function () {
         // Prepare action data
         const value = ether('1');
         const expectNValue = new BN(101);
@@ -274,8 +277,8 @@ contract('TaskExecutor', function([_, user, someone]) {
       });
     });
 
-    describe('execute by call', function() {
-      it('single action', async function() {
+    describe('execute by call', function () {
+      it('single action', async function () {
         // Prepare action data
         const actionEthValue = ether('0');
         const expectNValue = new BN(111);
@@ -301,7 +304,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.nValue.call()).to.be.bignumber.eq(expectNValue);
       });
 
-      it('multiple actions', async function() {
+      it('multiple actions', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectNValue = new BN(111);
@@ -339,7 +342,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).to.be.eq(expectBValue);
       });
 
-      it('payable action', async function() {
+      it('payable action', async function () {
         var balanceFoo = await tracker(this.foo.address);
 
         // Prepare action data
@@ -368,7 +371,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await balanceFoo.delta()).to.be.bignumber.eq(actionEthValue);
       });
 
-      it('should revert: send token', async function() {
+      it('should revert: send token', async function () {
         // Prepare action data
         const actionEthValue = ether('5');
         const actionData = web3.eth.abi.encodeParameters(
@@ -394,7 +397,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: call contract revert', async function() {
+      it('should revert: call contract revert', async function () {
         // Prepare action data
         const actionEthValue = ether('0');
         const actionData = getCallActionData(
@@ -422,7 +425,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: non existed function', async function() {
+      it('should revert: non existed function', async function () {
         // Prepare action data
         const ethValue = ether('0');
         const actionData = web3.eth.abi.encodeParameters(
@@ -449,8 +452,8 @@ contract('TaskExecutor', function([_, user, someone]) {
       });
     });
 
-    describe('execute by mix calls', function() {
-      it('delegate call + call', async function() {
+    describe('execute by mix calls', function () {
+      it('delegate call + call', async function () {
         // Prepare action data
         const expectNValue = new BN(101);
         const actionAData = getCallData(FooAction, 'barUint1', [
@@ -485,7 +488,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).to.be.eq(expectBValue);
       });
 
-      it('call + delegate call', async function() {
+      it('call + delegate call', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectBValue =
@@ -522,9 +525,9 @@ contract('TaskExecutor', function([_, user, someone]) {
     });
   });
 
-  describe('chained input', function() {
-    describe('dynamic parameter by delegate call', function() {
-      it('replace parameter', async function() {
+  describe('chained input', function () {
+    describe('dynamic parameter by delegate call', function () {
+      it('replace parameter', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
@@ -551,7 +554,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter with dynamic array return', async function() {
+      it('replace parameter with dynamic array return', async function () {
         // Prepare action data
         const secAmt = ether('1');
         const actionAData = getCallData(FooAction, 'barUList', [
@@ -590,7 +593,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace third parameter', async function() {
+      it('replace third parameter', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar2', [
@@ -618,7 +621,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter by 50% of ref value', async function() {
+      it('replace parameter by 50% of ref value', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'barUint', [
           this.foo.address,
@@ -651,7 +654,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace dynamic array parameter with dynamic array return', async function() {
+      it('replace dynamic array parameter with dynamic array return', async function () {
         // Prepare action data
         const expectNList = [new BN(300), new BN(100), new BN(75)];
         const actionAData = getCallData(FooAction, 'barUList', [
@@ -691,7 +694,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         }
       });
 
-      it('should revert: location count less than ref count', async function() {
+      it('should revert: location count less than ref count', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
@@ -719,7 +722,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: location count greater than ref count', async function() {
+      it('should revert: location count greater than ref count', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
@@ -747,7 +750,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: ref to out of localStack', async function() {
+      it('should revert: ref to out of localStack', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
@@ -775,7 +778,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: expected return amount not match', async function() {
+      it('should revert: expected return amount not match', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBData = getCallData(FooAction, 'bar1', [
@@ -803,7 +806,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: overflow during trimming', async function() {
+      it('should revert: overflow during trimming', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'barUint', [
           this.foo.address,
@@ -832,8 +835,8 @@ contract('TaskExecutor', function([_, user, someone]) {
       });
     });
 
-    describe('dynamic parameter by call', function() {
-      it('replace parameter', async function() {
+    describe('dynamic parameter by call', function () {
+      it('replace parameter', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -862,7 +865,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter with dynamic array return', async function() {
+      it('replace parameter with dynamic array return', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const secAmt = ether('2');
@@ -905,7 +908,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace second parameter', async function() {
+      it('replace second parameter', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -935,7 +938,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter by 50% of ref value', async function() {
+      it('replace parameter by 50% of ref value', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(
@@ -975,7 +978,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace dynamic array parameter with dynamic array return', async function() {
+      it('replace dynamic array parameter with dynamic array return', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectNList = [new BN(300), new BN(100), new BN(75)];
@@ -1020,7 +1023,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         }
       });
 
-      it('should revert: location count less than ref count', async function() {
+      it('should revert: location count less than ref count', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1050,7 +1053,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: location count greater than ref count', async function() {
+      it('should revert: location count greater than ref count', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1081,7 +1084,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: ref to out of localStack', async function() {
+      it('should revert: ref to out of localStack', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1111,7 +1114,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: expected return amount not match', async function() {
+      it('should revert: expected return amount not match', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1141,7 +1144,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('should revert: overflow during trimming', async function() {
+      it('should revert: overflow during trimming', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(
@@ -1179,8 +1182,8 @@ contract('TaskExecutor', function([_, user, someone]) {
       });
     });
 
-    describe('dynamic parameter by mix call', function() {
-      it('replace parameter by delegate call + call', async function() {
+    describe('dynamic parameter by mix call', function () {
+      it('replace parameter by delegate call + call', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
 
@@ -1208,7 +1211,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter by call + delegate call', async function() {
+      it('replace parameter by call + delegate call', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1237,7 +1240,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter with dynamic array return by delegate call + call', async function() {
+      it('replace parameter with dynamic array return by delegate call + call', async function () {
         // Prepare action data
         const secAmt = ether('2');
         const actionAData = getCallData(FooAction, 'barUList', [
@@ -1279,7 +1282,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace parameter with dynamic array return by call + delegate call', async function() {
+      it('replace parameter with dynamic array return by call + delegate call', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const secAmt = ether('1');
@@ -1317,7 +1320,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace second parameter by delegate call + call', async function() {
+      it('replace second parameter by delegate call + call', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'bar', [this.foo.address]);
         const actionBEthValue = ether('0');
@@ -1345,7 +1348,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace third parameter by call + delegate call', async function() {
+      it('replace third parameter by call + delegate call', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(actionAEthValue, Foo, 'bar', []);
@@ -1376,7 +1379,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         expect(await this.foo.bValue.call()).eq(await this.foo.bar.call());
       });
 
-      it('replace parameter by 50% of ref value by delegate call + call', async function() {
+      it('replace parameter by 50% of ref value by delegate call + call', async function () {
         // Prepare action data
         const actionAData = getCallData(FooAction, 'barUint', [
           this.foo.address,
@@ -1412,7 +1415,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace parameter by 50% of ref value by call + delegate call', async function() {
+      it('replace parameter by 50% of ref value by call + delegate call', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const actionAData = getCallActionData(
@@ -1449,7 +1452,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         );
       });
 
-      it('replace dynamic array parameter with dynamic array return by delegate call + call', async function() {
+      it('replace dynamic array parameter with dynamic array return by delegate call + call', async function () {
         // Prepare action data
         const expectNList = [new BN(300), new BN(100), new BN(75)];
         const actionAData = getCallData(FooAction, 'barUList', [
@@ -1493,7 +1496,7 @@ contract('TaskExecutor', function([_, user, someone]) {
         }
       });
 
-      it('replace dynamic array parameter with dynamic array return by call + delegate call', async function() {
+      it('replace dynamic array parameter with dynamic array return by call + delegate call', async function () {
         // Prepare action data
         const actionAEthValue = ether('0');
         const expectNList = [new BN(300), new BN(100), new BN(75)];
@@ -1537,8 +1540,8 @@ contract('TaskExecutor', function([_, user, someone]) {
     });
   });
 
-  describe('kill', function() {
-    it('destroy by owner', async function() {
+  describe('kill', function () {
+    it('destroy by owner', async function () {
       await this.taskExecutor.destroy({
         from: _,
       });
@@ -1547,7 +1550,7 @@ contract('TaskExecutor', function([_, user, someone]) {
       expect(await web3.eth.getCode(this.taskExecutor.address)).eq('0x');
     });
 
-    it('should revert: kill by invalid owner', async function() {
+    it('should revert: kill by invalid owner', async function () {
       await expectRevert(
         this.taskExecutor.destroy({
           from: user,

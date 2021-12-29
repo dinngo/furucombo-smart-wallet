@@ -26,32 +26,35 @@ const AAuth = artifacts.require('AAuth');
 
 const FUNCTION_SIG_EXECUTE = '0x1cff79cd';
 
-contract('AAuth', function([_, owner, user, someone1, someone2]) {
+contract('AAuth', function ([_, owner, user, someone1, someone2]) {
   let id;
 
-  before(async function() {
+  before(async function () {
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    await this.dsRegistry.build(user);
+    const dsProxyAddr = await this.dsRegistry.proxies.call(user);
+    if (dsProxyAddr == constants.ZERO_ADDRESS) {
+      await this.dsRegistry.build(user);
+    }
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
     this.aAuth = await AAuth.new(owner);
   });
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     id = await evmSnapshot();
   });
 
-  afterEach(async function() {
+  afterEach(async function () {
     await evmRevert(id);
   });
 
-  describe('Create DSGuard And Set', function() {
-    beforeEach(async function() {
+  describe('Create DSGuard And Set', function () {
+    beforeEach(async function () {
       expect(await this.userProxy.authority.call()).to.be.eq(ZERO_ADDRESS);
     });
 
-    it('normal', async function() {
+    it('normal', async function () {
       const data = getCallData(AAuth, 'createAndSetAuth', []);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
         from: user,
@@ -64,7 +67,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       expect(await newAuth.owner.call()).to.be.eq(this.userProxy.address);
     });
 
-    it('pre-permit', async function() {
+    it('pre-permit', async function () {
       const callers = [someone1];
       const data = getCallData(AAuth, 'createAndSetAuthPrePermit', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
@@ -93,7 +96,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.false;
     });
 
-    it('replace existing auth', async function() {
+    it('replace existing auth', async function () {
       // First Auth
       const firstAuth = await DSGuard.new();
       await firstAuth.permit(
@@ -142,8 +145,8 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
     });
   });
 
-  describe('Permit', function() {
-    beforeEach(async function() {
+  describe('Permit', function () {
+    beforeEach(async function () {
       this.auth = await DSGuard.new();
       await this.auth.setOwner(this.userProxy.address);
       await this.userProxy.setAuthority(this.auth.address, { from: user });
@@ -166,7 +169,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.false;
     });
 
-    it('single', async function() {
+    it('single', async function () {
       const callers = [someone1];
       const data = getCallData(AAuth, 'permit', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
@@ -191,7 +194,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.false;
     });
 
-    it('multiple', async function() {
+    it('multiple', async function () {
       const callers = [someone1, someone2];
       const data = getCallData(AAuth, 'permit', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
@@ -216,7 +219,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.true;
     });
 
-    it('dsProxy not owner of dsGuard', async function() {
+    it('dsProxy not owner of dsGuard', async function () {
       // Prepare and set new dsGuard
       const newAuth = await DSGuard.new({ from: user });
       await this.userProxy.setAuthority(newAuth.address, {
@@ -237,8 +240,8 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
     });
   });
 
-  describe('Forbid', function() {
-    beforeEach(async function() {
+  describe('Forbid', function () {
+    beforeEach(async function () {
       // Set new DSGuard with pre permit callers
       const callers = [someone1, someone2];
       this.auth = await DSGuard.new();
@@ -273,7 +276,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.true;
     });
 
-    it('single', async function() {
+    it('single', async function () {
       const callers = [someone1];
       const data = getCallData(AAuth, 'forbid', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
@@ -291,7 +294,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.false;
     });
 
-    it('multiple', async function() {
+    it('multiple', async function () {
       const callers = [someone1, someone2];
       const data = getCallData(AAuth, 'forbid', [callers]);
       const receipt = await this.userProxy.execute(this.aAuth.address, data, {
@@ -316,7 +319,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       ).to.be.false;
     });
 
-    it('dsProxy not owner of dsGuard', async function() {
+    it('dsProxy not owner of dsGuard', async function () {
       // Prepare and set new dsGuard
       const newAuth = await DSGuard.new({ from: user });
       await this.userProxy.setAuthority(newAuth.address, {
@@ -337,12 +340,12 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
     });
   });
 
-  describe('Destroy', function() {
-    beforeEach(async function() {
+  describe('Destroy', function () {
+    beforeEach(async function () {
       expect(await web3.eth.getCode(this.aAuth.address)).not.eq('0x');
     });
 
-    it('kill by owner', async function() {
+    it('kill by owner', async function () {
       await this.aAuth.destroy({
         from: owner,
       });
@@ -350,7 +353,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       expect(await web3.eth.getCode(this.aAuth.address)).eq('0x');
     });
 
-    it('should revert: kill by invalid owner', async function() {
+    it('should revert: kill by invalid owner', async function () {
       await expectRevert(
         this.aAuth.destroy({
           from: user,
@@ -359,7 +362,7 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
       );
     });
 
-    it('should revert: used in delegatecall', async function() {
+    it('should revert: used in delegatecall', async function () {
       const data = getCallData(AAuth, 'destroy', []);
       await expectRevert.unspecified(
         this.userProxy.execute(this.aAuth.address, data, {
