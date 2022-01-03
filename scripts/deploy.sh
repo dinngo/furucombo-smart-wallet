@@ -6,11 +6,6 @@ trap cleanup EXIT
 
 hardhat_port=8545
 
-# get args with count nums
-op=${@: 1:1}
-tests=${@: 2:$#}
-block_num='21411286'
-
 cleanup() {
     for hardhat_pid in ${hardhat_pids}
     do
@@ -27,17 +22,8 @@ hardhat_running() {
 }
 
 start_hardhat() {
-    if [[ ${op} = 'latestblock' ]]; then
-        npx hardhat node --fork ${POLYGON_MAINNET_NODE} --no-deploy >/dev/null &
-        echo "fork latest block from POLYGON_MAINNET_NODE:" ${POLYGON_MAINNET_NODE}
-    elif [[ ${op} = 'setblock' ]]; then
-        npx hardhat node --fork ${POLYGON_MAINNET_NODE} --fork-block-number $block_num --no-deploy >/dev/null &
-        echo "fork block" ${block_num} "from POLYGON_MAINNET_NODE:" ${POLYGON_MAINNET_NODE}
-    else
-        echo "exit due to unkown op:" ${op}
-        exit 1
-    fi
-    echo "no deployment script will be executed"
+    npx hardhat node --fork ${POLYGON_MAINNET_NODE} --no-deploy >/dev/null &
+    echo "fork latest block from POLYGON_MAINNET_NODE:" ${POLYGON_MAINNET_NODE}       
 }
 
 wait_hardhat_ready() {
@@ -49,7 +35,7 @@ wait_hardhat_ready() {
     echo "hardhat pids:" ${hardhat_pids}
 }
 
-echo "running tests:" ${tests}
+echo "deploying to localhost ..."
 
 if hardhat_running; then
     echo "Using the existing hardhat network instance"
@@ -63,4 +49,4 @@ wait_hardhat_ready
 npx hardhat --version
 
 # Execute rest test files with suffix `.test.js`
-npx hardhat --network localhost test $tests
+npx hardhat --network localhost deploy

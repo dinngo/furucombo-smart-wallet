@@ -7,6 +7,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     await deploy('AFurucombo', {
         from: deployer,
         args: [
+            deployer,
             proxy,
         ],
         log: true,

@@ -3,15 +3,14 @@ const {
   BN,
   constants,
   ether,
-  expectEvent,
   expectRevert,
-  time,
   send,
 } = require('@openzeppelin/test-helpers');
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 const { tracker } = balance;
 const { expect } = require('chai');
-const { utils } = require('web3');
+
+const { ethers } = require('hardhat');
 
 const {
   DS_PROXY_REGISTRY,
@@ -28,17 +27,22 @@ const IDSProxy = artifacts.require('IDSProxy');
 const IToken = artifacts.require('IERC20');
 const AWallet = artifacts.require('AWallet');
 
-contract('AWallet', function ([_, owner, user, someone1]) {
+contract('AWallet', function ([_, owner, user]) {
   let id;
   const tokenAAddress = DAI_TOKEN;
   const tokenAProviderAddress = DAI_PROVIDER;
   const tokenBAddress = BAT_TOKEN;
   const tokenBProviderAddress = BAT_PROVIDER;
+  const gasPrice = 1000000000; //should be the same as the gasPrice in hardhat.config.js
+  // const gasPrice2 = ethers.provider.getGasPrice();
 
   before(async function () {
-    //0x1158E460913D00000
-    await impersonateAndInjectEther(tokenAProviderAddress, '0xde0b6b3a7640000');
-    await impersonateAndInjectEther(tokenBProviderAddress, '0xde0b6b3a7640000');
+    await impersonateAndInjectEther(tokenAProviderAddress);
+    await impersonateAndInjectEther(tokenBProviderAddress);
+
+    // console.log("gas price");
+    // console.log(gasPrice2);
+    // console.log(gasPrice2 == gasPrice);
 
     this.tokenA = await IToken.at(tokenAAddress);
     this.tokenB = await IToken.at(tokenBAddress);
@@ -114,10 +118,11 @@ contract('AWallet', function ([_, owner, user, someone1]) {
       expect(await this.tokenA.balanceOf.call(user)).to.be.bignumber.eq(
         withdrawAmount
       );
+
       expect(await balanceUser.delta()).to.be.bignumber.eq(
         ether('0')
           .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed))
+          .sub(new BN(receipt.receipt.gasUsed * gasPrice))
       );
     });
 
@@ -153,7 +158,7 @@ contract('AWallet', function ([_, owner, user, someone1]) {
       expect(await balanceUser.delta()).to.be.bignumber.eq(
         ether('0')
           .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed))
+          .sub(new BN(receipt.receipt.gasUsed * gasPrice))
       );
     });
 
@@ -185,7 +190,7 @@ contract('AWallet', function ([_, owner, user, someone1]) {
 
       // Verify user balance
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        withdrawAmount.sub(dummyAmount).sub(new BN(receipt.receipt.gasUsed))
+        withdrawAmount.sub(dummyAmount).sub(new BN(receipt.receipt.gasUsed * gasPrice))
       );
     });
 
@@ -215,7 +220,7 @@ contract('AWallet', function ([_, owner, user, someone1]) {
       // Verify user balance
       // return all balance of DSProxy includes dummyAmount
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        depositNativeAmount.sub(new BN(receipt.receipt.gasUsed))
+        depositNativeAmount.sub(new BN(receipt.receipt.gasUsed * gasPrice))
       );
     });
 
@@ -258,7 +263,7 @@ contract('AWallet', function ([_, owner, user, someone1]) {
       expect(await balanceUser.delta()).to.be.bignumber.eq(
         withdrawNativeAmount
           .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed))
+          .sub(new BN(receipt.receipt.gasUsed * gasPrice))
       );
     });
 

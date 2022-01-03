@@ -122,7 +122,7 @@ async function impersonateAndInjectEther(address) {
   // Impersonate pair
   await network.provider.send('hardhat_impersonateAccount', [address]);
 
-  // Inject 1 ether
+  // Inject 1 ether of native token
   await network.provider.send('hardhat_setBalance', [
     address,
     '0xde0b6b3a7640000',

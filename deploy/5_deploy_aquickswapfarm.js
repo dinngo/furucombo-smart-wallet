@@ -8,6 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
         from: deployer,
         args: [
             deployer,
+            deployer,
             fee,
         ],
         log: true,

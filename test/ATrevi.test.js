@@ -27,6 +27,7 @@ const {
   getCreated,
   getActionReturn,
   getCallData,
+  impersonateAndInjectEther,
 } = require('./utils/utils');
 
 const TaskExecutor = artifacts.require('TaskExecutorMock');
@@ -75,7 +76,7 @@ async function addAngel(
   return [angel, angelPid];
 }
 
-contract('ATrevi', function([_, owner, collector, user, dummy]) {
+contract('ATrevi', function ([_, owner, collector, user, dummy]) {
   const stakingTokenAddress = DAI_TOKEN;
   const stakingTokenProvider = DAI_PROVIDER;
   const rewardTokenAAddress = WMATIC_TOKEN;
@@ -85,7 +86,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
   const rewardTokenCAddress = WETH_TOKEN;
   const dummyAmount = ether('0.01');
 
-  before(async function() {
+  before(async function () {
+    await impersonateAndInjectEther(rewardTokenAProvider);
+    await impersonateAndInjectEther(rewardTokenBProvider);
+
     const defaultFlashloanFee = new BN(10);
     this.stakingToken = await IToken.at(stakingTokenAddress);
     this.rewardTokenA = await IToken.at(rewardTokenAAddress);
@@ -175,28 +179,31 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
     // Create user dsproxy
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    await this.dsRegistry.build(user);
+    const dsProxyAddr = await this.dsRegistry.proxies.call(user);
+    if (dsProxyAddr == constants.ZERO_ADDRESS) {
+      await this.dsRegistry.build(user);
+    }
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
   });
 
-  beforeEach(async function() {
+  beforeEach(async function () {
     id = await evmSnapshot();
   });
 
-  afterEach(async function() {
+  afterEach(async function () {
     await evmRevert(id);
   });
 
-  describe('collector', function() {
-    it('has an collector', async function() {
+  describe('collector', function () {
+    it('has an collector', async function () {
       expect(await this.aTrevi.collector()).to.equal(collector);
     });
   });
 
-  describe('deposit', function() {
-    it('normal', async function() {
+  describe('deposit', function () {
+    it('normal', async function () {
       const stakingAmount = ether('10');
 
       // TaskExecutorMock data
@@ -244,7 +251,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('should revert: insufficient staking token', async function() {
+    it('should revert: insufficient staking token', async function () {
       const extra = ether('1');
       const stakingAmount = ether('10');
 
@@ -270,7 +277,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: fountain not found', async function() {
+    it('should revert: fountain not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -286,10 +293,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('withdraw', function() {
+  describe('withdraw', function () {
     const stakingAmount = ether('10');
 
-    beforeEach(async function() {
+    beforeEach(async function () {
       // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
         from: stakingTokenProvider,
@@ -302,7 +309,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       ).to.be.bignumber.eq(stakingAmount);
     });
 
-    it('normal', async function() {
+    it('normal', async function () {
       const withdrawAmount = stakingAmount;
 
       // TaskExecutorMock data
@@ -345,7 +352,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('should revert: insufficient ftn token', async function() {
+    it('should revert: insufficient ftn token', async function () {
       const extra = ether('1');
       const withdrawAmount = stakingAmount.add(extra);
 
@@ -371,7 +378,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: fountain not found', async function() {
+    it('should revert: fountain not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -387,10 +394,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('harvest with fee charging', function() {
+  describe('harvest with fee charging', function () {
     const stakingAmount = ether('10');
 
-    beforeEach(async function() {
+    beforeEach(async function () {
       // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
         from: stakingTokenProvider,
@@ -415,7 +422,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('normal', async function() {
+    it('normal', async function () {
       // Join angel B
       await this.userProxy.execute(
         this.executor.address,
@@ -486,7 +493,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('partial output tokens', async function() {
+    it('partial output tokens', async function () {
       // Join angel B
       await this.userProxy.execute(
         this.executor.address,
@@ -556,7 +563,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('duplicate reward tokens', async function() {
+    it('duplicate reward tokens', async function () {
       // Join angel A2
       await this.userProxy.execute(
         this.executor.address,
@@ -617,7 +624,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('should revert: fountain not found', async function() {
+    it('should revert: fountain not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -632,7 +639,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: fountain not found', async function() {
+    it('should revert: fountain not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -647,7 +654,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: unexpected length', async function() {
+    it('should revert: unexpected length', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -666,7 +673,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: angel not found', async function() {
+    it('should revert: angel not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -685,10 +692,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('harvest without fee charging', function() {
+  describe('harvest without fee charging', function () {
     const stakingAmount = ether('10');
 
-    beforeEach(async function() {
+    beforeEach(async function () {
       // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
         from: stakingTokenProvider,
@@ -713,7 +720,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('normal', async function() {
+    it('normal', async function () {
       // Join angel B
       await this.userProxy.execute(
         this.executor.address,
@@ -779,7 +786,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('partial output tokens', async function() {
+    it('partial output tokens', async function () {
       // Join angel B
       await this.userProxy.execute(
         this.executor.address,
@@ -844,7 +851,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('duplicate reward tokens', async function() {
+    it('duplicate reward tokens', async function () {
       // Join angel A2
       await this.userProxy.execute(
         this.executor.address,
@@ -902,7 +909,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       profileGas(receipt);
     });
 
-    it('should revert: fountain not found', async function() {
+    it('should revert: fountain not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -917,7 +924,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: fountain not found', async function() {
+    it('should revert: fountain not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -932,7 +939,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: unexpected length', async function() {
+    it('should revert: unexpected length', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -951,7 +958,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: angel not found', async function() {
+    it('should revert: angel not found', async function () {
       // TaskExecutorMock data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aTrevi.address,
@@ -970,8 +977,8 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('destroy', function() {
-    it('normal', async function() {
+  describe('destroy', function () {
+    it('normal', async function () {
       await this.aTrevi.destroy({ from: owner });
       expect(await web3.eth.getCode(this.aTrevi.address)).eq('0x');
     });

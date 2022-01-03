@@ -4,7 +4,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     console.log("deployer:" + deployer);
     await deploy('AWallet', {
         from: deployer,
-        args: [],
+        args: [deployer],
         log: true,
     });
 };

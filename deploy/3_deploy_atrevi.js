@@ -8,6 +8,7 @@ module.exports = async ({ getNamedAccounts, deployments }) => {
     await deploy('ATrevi', {
         from: deployer,
         args: [
+            deployer,
             archangel,
             deployer,
             fee,

@@ -5,9 +5,11 @@
   "main": "",
   "scripts": {
     "build": "npx hardhat compile",
-    "test": "scripts/test.sh",
+    "test": "scripts/test.sh latestblock",
+    "unittest": "scripts/test.sh setblock",
     "lint:solhint": "solhint \"contracts/**/*.sol\"",
-    "lint:prettier": "scripts/prettier.sh"
+    "lint:prettier": "scripts/prettier.sh",
+    "deploy": "scripts/deploy.sh"
   },
   "author": "DINNGO",
   "license": "MIT",
