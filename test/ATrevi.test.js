@@ -87,6 +87,8 @@ contract('ATrevi', function ([_, owner, collector, user, dummy]) {
   const dummyAmount = ether('0.01');
 
   before(async function () {
+    initialEvmId = await evmSnapshot();
+
     await impersonateAndInjectEther(rewardTokenAProvider);
     await impersonateAndInjectEther(rewardTokenBProvider);
 
@@ -194,6 +196,10 @@ contract('ATrevi', function ([_, owner, collector, user, dummy]) {
 
   afterEach(async function () {
     await evmRevert(id);
+  });
+
+  after(async function () {
+    await evmRevert(initialEvmId);
   });
 
   describe('collector', function () {

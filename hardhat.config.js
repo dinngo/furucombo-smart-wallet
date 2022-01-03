@@ -19,6 +19,7 @@ module.exports = {
       }
     },
   },
+  //for hardhat-deploy
   namedAccounts: {
     deployer: {
       default: 0,

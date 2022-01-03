@@ -12,6 +12,8 @@ const IDSProxy = artifacts.require('IDSProxy');
 
 contract('DestructibleAction', function ([_, owner, other]) {
   before(async function () {
+    initialEvmId = await evmSnapshot();
+
     this.destructible = await Destructible.new(owner);
 
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
@@ -30,6 +32,10 @@ contract('DestructibleAction', function ([_, owner, other]) {
 
   afterEach(async function () {
     await evmRevert(id);
+  });
+
+  after(async function () {
+    await evmRevert(initialEvmId);
   });
 
   describe('destroys', function () {

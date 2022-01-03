@@ -48,5 +48,5 @@ wait_hardhat_ready
 
 npx hardhat --version
 
-# Execute rest test files with suffix `.test.js`
+# deploy all the scripts
 npx hardhat --network localhost deploy

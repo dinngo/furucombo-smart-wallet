@@ -30,6 +30,8 @@ contract('AAuth', function ([_, owner, user, someone1, someone2]) {
   let id;
 
   before(async function () {
+    initialEvmId = await evmSnapshot();
+
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     const dsProxyAddr = await this.dsRegistry.proxies.call(user);
     if (dsProxyAddr == constants.ZERO_ADDRESS) {
@@ -47,6 +49,10 @@ contract('AAuth', function ([_, owner, user, someone1, someone2]) {
 
   afterEach(async function () {
     await evmRevert(id);
+  });
+
+  after(async function () {
+    await evmRevert(initialEvmId);
   });
 
   describe('Create DSGuard And Set', function () {

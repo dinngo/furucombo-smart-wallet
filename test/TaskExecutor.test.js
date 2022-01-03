@@ -30,6 +30,8 @@ contract('TaskExecutor', function ([_, user, someone]) {
   let balanceSomeone;
 
   before(async function () {
+    initialEvmId = await evmSnapshot();
+
     this.dsProxyRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     this.taskExecutor = await TaskExecutor.new(_);
     this.foo = await Foo.new();
@@ -53,6 +55,10 @@ contract('TaskExecutor', function ([_, user, someone]) {
 
   afterEach(async function () {
     await evmRevert(id);
+  });
+
+  after(async function () {
+    await evmRevert(initialEvmId);
   });
 
   describe('execute', function () {

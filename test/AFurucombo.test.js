@@ -43,6 +43,8 @@ contract('AFurucombo', function ([_, owner, user]) {
   const tokenOutAddress = DAI_TOKEN;
 
   before(async function () {
+    initialEvmId = await evmSnapshot();
+
     // Create actions
     this.executor = await TaskExecutor.new(owner);
     this.aFurucombo = await AFurucombo.new(owner, FURUCOMBO_PROXY);
@@ -88,6 +90,10 @@ contract('AFurucombo', function ([_, owner, user]) {
 
   afterEach(async function () {
     await evmRevert(id);
+  });
+
+  after(async function () {
+    await evmRevert(initialEvmId);
   });
 
   describe('inject and batchExec', function () {

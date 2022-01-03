@@ -37,6 +37,8 @@ contract('AWallet', function ([_, owner, user]) {
   // const gasPrice2 = ethers.provider.getGasPrice();
 
   before(async function () {
+    initialEvmId = await evmSnapshot();
+
     await impersonateAndInjectEther(tokenAProviderAddress);
     await impersonateAndInjectEther(tokenBProviderAddress);
 
@@ -65,6 +67,10 @@ contract('AWallet', function ([_, owner, user]) {
 
   afterEach(async function () {
     await evmRevert(id);
+  });
+
+  after(async function () {
+    await evmRevert(initialEvmId);
   });
 
   describe('withdraw token', function () {
