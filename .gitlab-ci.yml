@@ -1,7 +1,7 @@
 variables:
   DEPLOY_OWNER_PRIVKEY: 0xBF3862CD1EE53F542C483E4F55BEE2D0B13014A7D6AD1B0CA457240C2888C1FB
 
-image: node:10.21.0-buster
+image: node:14-buster
 
 cache: &global_cache
   key: ${CI_PROJECT_PATH_SLUG}
@@ -19,7 +19,7 @@ before_script:
     done
   - >
     for (( i=0; i<${len}; i+=1 )); do
-        TestCases[$i]=$(grep -o " it(" ${FILES[$i]} | wc -l)
+        TestCases[$i]=$(grep -o " it" ${FILES[$i]} | wc -l)
     done
   - >
     for ((i = 0; i<${len}; i++))

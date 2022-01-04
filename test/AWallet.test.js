@@ -10,8 +10,6 @@ const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 const { tracker } = balance;
 const { expect } = require('chai');
 
-const { ethers } = require('hardhat');
-
 const {
   DS_PROXY_REGISTRY,
   NATIVE_TOKEN,
@@ -34,17 +32,12 @@ contract('AWallet', function ([_, owner, user]) {
   const tokenBAddress = BAT_TOKEN;
   const tokenBProviderAddress = BAT_PROVIDER;
   const gasPrice = 1000000000; //should be the same as the gasPrice in hardhat.config.js
-  // const gasPrice2 = ethers.provider.getGasPrice();
 
   before(async function () {
     initialEvmId = await evmSnapshot();
 
     await impersonateAndInjectEther(tokenAProviderAddress);
     await impersonateAndInjectEther(tokenBProviderAddress);
-
-    // console.log("gas price");
-    // console.log(gasPrice2);
-    // console.log(gasPrice2 == gasPrice);
 
     this.tokenA = await IToken.at(tokenAAddress);
     this.tokenB = await IToken.at(tokenBAddress);
