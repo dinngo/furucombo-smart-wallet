@@ -15,11 +15,12 @@
   "author": "DINNGO",
   "license": "MIT",
   "devDependencies": {
-    "@nomiclabs/hardhat-ethers": "npm:hardhat-deploy-ethers@^0.3.0-beta.11",
+    "@nomiclabs/hardhat-ethers": "^2.0.2",
     "@nomiclabs/hardhat-truffle5": "^2.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
     "@openzeppelin/test-helpers": "^0.5.11",
+    "ethereum-waffle": "^3.4.0",
     "ethereumjs-abi": "^0.6.8",
     "ethereumjs-util": "^7.0.10",
     "ethereumjs-wallet": "^1.0.1",
@@ -32,11 +33,11 @@
     "prettier-plugin-solidity": "1.0.0-beta.1",
     "solhint": "3.0.0",
     "truffle": "5.3.9",
-    "web3": "^1.6.1"
+    "web3": "^1.6.1",
+    "@ethersproject/hardware-wallets": "^5.0.14"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "3.4.1",
-    "@truffle/hdwallet-provider": "^1.4.3"
+    "@openzeppelin/contracts": "3.4.1"
   },
   "husky": {
     "hooks": {
