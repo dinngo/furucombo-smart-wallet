@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [1.2.0] - 2022-01-07
+
+### Added
+
+- Unit test mode with specific block number for developing environment.
+
+### Changed
+
+- Migrate developing environment from Truffle to Hardhat.
+
 ## [1.1.0] - 2021-12-22
 
 ### Added

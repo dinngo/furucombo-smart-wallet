@@ -117,7 +117,7 @@ deploy:
   tags:
     - docker
   script:
-    - ./node_modules/.bin/ganache-cli -p 8242 -a $DEPLOY_OWNER_PRIVKEY &
-      #   - truffle migrate --network integration
+    - apt-get update && apt-get install -y netcat
+    - npm run deploy
   cache:
     <<: *global_cache

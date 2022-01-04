@@ -4,7 +4,8 @@
   "description": "",
   "main": "",
   "scripts": {
-    "build": "npx hardhat compile",
+    "build": "scripts/build.sh",
+    "compile": "npx hardhat compile",
     "test": "scripts/test.sh latestblock",
     "unittest": "scripts/test.sh setblock",
     "lint:solhint": "solhint \"contracts/**/*.sol\"",

@@ -91,6 +91,7 @@ contract('ATrevi', function ([_, owner, collector, user, dummy]) {
 
     await impersonateAndInjectEther(rewardTokenAProvider);
     await impersonateAndInjectEther(rewardTokenBProvider);
+    await impersonateAndInjectEther(stakingTokenProvider);
 
     const defaultFlashloanFee = new BN(10);
     this.stakingToken = await IToken.at(stakingTokenAddress);

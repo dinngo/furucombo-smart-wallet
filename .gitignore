@@ -10,6 +10,9 @@ build/
 .DS_Store
 package-lock.json
 
+# vs code settings
+.vscode/
+
 # secrets
 .secret_beta
 
