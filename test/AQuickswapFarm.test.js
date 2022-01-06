@@ -1,10 +1,4 @@
-const {
-  BN,
-  ether,
-  expectRevert,
-  time,
-  constants,
-} = require('@openzeppelin/test-helpers');
+const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
 const {
@@ -22,7 +16,7 @@ const {
   evmSnapshot,
   getCallData,
   getActionReturn,
-  impersonateAndInjectEther,
+  impersonate,
 } = require('./utils/utils');
 
 const AQuickswapFarm = artifacts.require('AQuickswapFarm');
@@ -35,21 +29,21 @@ const IDQuick = artifacts.require('IDQuick');
 const IStakingRewards = artifacts.require('IStakingRewards');
 const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
-contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
+contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
   const fee = new BN('2000'); // 20% harvest fee
 
   let initialEvmId;
-  before(async function () {
+  before(async function() {
     initialEvmId = await evmSnapshot();
 
     this.lpToken = await IToken.at(lpTokenAddress);
     this.dQuick = await IDQuick.at(QUICKSWAP_DQUICK);
     this.quick = await IDQuick.at(QUICKSWAP_QUICK);
 
-    await impersonateAndInjectEther(lpTokenProvider);
-    await impersonateAndInjectEther(QUICKSWAP_DQUICK_PROVIDER);
+    await impersonate(lpTokenProvider);
+    await impersonate(QUICKSWAP_DQUICK_PROVIDER);
 
     this.stakingRewardsFactory = await IStakingRewardsFactory.at(
       QUICKSWAP_STAKING_REWARD_FACTORY
@@ -68,10 +62,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
 
     // Create user dsproxy
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    const dsProxyAddr = await this.dsRegistry.proxies.call(user);
-    if (dsProxyAddr == constants.ZERO_ADDRESS) {
-      await this.dsRegistry.build(user);
-    }
+    await this.dsRegistry.build(user);
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );
@@ -80,26 +71,26 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
     this.executor = await TaskExecutor.new(owner);
   });
 
-  beforeEach(async function () {
+  beforeEach(async function() {
     id = await evmSnapshot();
   });
 
-  afterEach(async function () {
+  afterEach(async function() {
     await evmRevert(id);
   });
 
-  after(async function () {
+  after(async function() {
     await evmRevert(initialEvmId);
   });
 
-  describe('collector', function () {
-    it('has an collector', async function () {
+  describe('collector', function() {
+    it('has an collector', async function() {
       expect(await this.aQuickswapFarm.collector()).to.equal(collector);
     });
   });
 
-  describe('stake', function () {
-    it('stake LP token to mining pool', async function () {
+  describe('stake', function() {
+    it('stake LP token to mining pool', async function() {
       // Send LP token to user dsproxy
       const lpAmount = ether('1');
       await this.lpToken.transfer(this.userProxy.address, lpAmount, {
@@ -124,7 +115,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       expect(lpAmountAfter).to.be.bignumber.zero;
     });
 
-    it('should revert: zero LP token', async function () {
+    it('should revert: zero LP token', async function() {
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
@@ -145,7 +136,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: insuifficient LP token', async function () {
+    it('should revert: insuifficient LP token', async function() {
       // prepare data
       const stakeAmount = ether('1');
       const data = getCallData(TaskExecutor, 'execMock', [
@@ -174,7 +165,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: staking wrong LP token', async function () {
+    it('should revert: staking wrong LP token', async function() {
       const lpAmount = ether('1');
       // prepare data
       const data = getCallData(TaskExecutor, 'execMock', [
@@ -192,8 +183,8 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('get reward', function () {
-    beforeEach(async function () {
+  describe('get reward', function() {
+    beforeEach(async function() {
       // stake token before each test.
       const lpAmount = ether('10');
 
@@ -215,7 +206,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       await time.increase(time.duration.days(14));
     });
 
-    it('get reward', async function () {
+    it('get reward', async function() {
       // expect reward
       const expectReward = await this.stakingRewardsContract.earned.call(
         this.userProxy.address
@@ -254,7 +245,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('get reward and charge', async function () {
+    it('get reward and charge', async function() {
       // total reward
       const totalReward = await this.stakingRewardsContract.earned.call(
         this.userProxy.address
@@ -312,8 +303,8 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('dQuick leave', async function () {
-    it('dQuick leave', async function () {
+  describe('dQuick leave', async function() {
+    it('dQuick leave', async function() {
       // transfer dQuick to user proxy
       const dQuickAmount = ether('5');
       await this.dQuick.transfer(this.userProxy.address, dQuickAmount, {
@@ -356,7 +347,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: zero dQuick', async function () {
+    it('should revert: zero dQuick', async function() {
       // leave
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,
@@ -373,8 +364,8 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('exit', async function () {
-    it('exit', async function () {
+  describe('exit', async function() {
+    it('exit', async function() {
       const userLPAmountBefore = await this.lpToken.balanceOf.call(
         this.userProxy.address
       );
@@ -442,7 +433,7 @@ contract('AQuickswapFarm', function ([_, owner, collector, user, dummy]) {
       ).to.be.bignumber.eq(returnedUserReward);
     });
 
-    it('should revert: zero lp token staking', async function () {
+    it('should revert: zero lp token staking', async function() {
       // exit
       data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapFarm.address,

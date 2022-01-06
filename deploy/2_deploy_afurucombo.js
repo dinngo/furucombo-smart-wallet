@@ -1,15 +1,13 @@
-const proxy = '0x78B95131bC21eC73DF5158CF7A018Ad7bADa5561'; // replace it depend on your env
+const proxy = '0x125d2E4a83bBba4e6f51a244c494f9A1958D20BB'; // replace it depend on your env
 
 module.exports = async ({ getNamedAccounts, deployments }) => {
-    const { deploy } = deployments;
-    const { deployer } = await getNamedAccounts();
-    console.log("deployer:" + deployer);
-    await deploy('AFurucombo', {
-        from: deployer,
-        args: [
-            deployer,
-            proxy,
-        ],
-        log: true,
-    });
+  const { deploy } = deployments;
+  const { deployer } = await getNamedAccounts();
+  await deploy('AFurucombo', {
+    from: deployer,
+    args: [deployer, proxy],
+    log: true,
+  });
 };
+
+module.exports.tags = ['AFurucombo'];

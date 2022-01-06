@@ -1,31 +1,31 @@
 const { expectRevert } = require('@openzeppelin/test-helpers');
 
-const { expect } = require('chai');
-
 const { evmRevert, evmSnapshot } = require('./utils/utils');
 
 const DelegateCall = artifacts.require('DelegateCallActionMock');
 
-contract('DelegateCallAction', function ([_]) {
-  before(async function () {
+contract('DelegateCallAction', function([_]) {
+  let initialEvmId;
+
+  before(async function() {
     initialEvmId = await evmSnapshot();
     this.delegateCall = await DelegateCall.new(5);
   });
 
-  beforeEach(async function () {
+  beforeEach(async function() {
     id = await evmSnapshot();
   });
 
-  afterEach(async function () {
+  afterEach(async function() {
     await evmRevert(id);
   });
 
-  after(async function () {
+  after(async function() {
     await evmRevert(initialEvmId);
   });
 
-  describe('delegate call', function () {
-    it('should revert: delegate call only', async function () {
+  describe('delegate call', function() {
+    it('should revert: delegate call only', async function() {
       await expectRevert(this.delegateCall.getCount(), 'Delegate call only');
     });
   });
