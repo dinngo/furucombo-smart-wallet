@@ -5,6 +5,7 @@ const { evmRevert, evmSnapshot } = require('./utils/utils');
 const DelegateCall = artifacts.require('DelegateCallActionMock');
 
 contract('DelegateCallAction', function([_]) {
+  let id;
   let initialEvmId;
 
   before(async function() {

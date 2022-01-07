@@ -33,7 +33,6 @@ const AWallet = artifacts.require('AWallet');
 
 contract('AWallet', function([_, owner, user]) {
   let id;
-  let gasPrice;
   let initialEvmId;
 
   const tokenAAddress = DAI_TOKEN;
@@ -98,7 +97,7 @@ contract('AWallet', function([_, owner, user]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -119,13 +118,8 @@ contract('AWallet', function([_, owner, user]) {
         withdrawAmount
       );
 
-      //remove 0x and trans into big number for later calculation
-      gasPrice = new BN(receipt.receipt.effectiveGasPrice.substring(2), 16);
-
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        ether('0')
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed).mul(gasPrice))
+        ether('0').sub(dummyAmount)
       );
     });
 
@@ -138,7 +132,7 @@ contract('AWallet', function([_, owner, user]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -159,13 +153,8 @@ contract('AWallet', function([_, owner, user]) {
         depositTokenAAmount
       );
 
-      //remove 0x and trans into big number for later calculation
-      gasPrice = new BN(receipt.receipt.effectiveGasPrice.substring(2), 16);
-
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        ether('0')
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed).mul(gasPrice))
+        ether('0').sub(dummyAmount)
       );
     });
 
@@ -179,7 +168,7 @@ contract('AWallet', function([_, owner, user]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -195,14 +184,9 @@ contract('AWallet', function([_, owner, user]) {
         await this.tokenB.balanceOf.call(this.userProxy.address)
       ).to.be.bignumber.eq(depositTokenBAmount);
 
-      //remove 0x and trans into big number for later calculation
-      gasPrice = new BN(receipt.receipt.effectiveGasPrice.substring(2), 16);
-
       // Verify user balance
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        withdrawAmount
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed).mul(gasPrice))
+        withdrawAmount.sub(dummyAmount)
       );
     });
 
@@ -215,7 +199,7 @@ contract('AWallet', function([_, owner, user]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -229,14 +213,9 @@ contract('AWallet', function([_, owner, user]) {
         await this.tokenB.balanceOf.call(this.userProxy.address)
       ).to.be.bignumber.eq(depositTokenBAmount);
 
-      //remove 0x and trans into big number for later calculation
-      gasPrice = new BN(receipt.receipt.effectiveGasPrice.substring(2), 16);
-
       // Verify user balance
       // return all balance of DSProxy includes dummyAmount
-      expect(await balanceUser.delta()).to.be.bignumber.eq(
-        depositNativeAmount.sub(new BN(receipt.receipt.gasUsed).mul(gasPrice))
-      );
+      expect(await balanceUser.delta()).to.be.bignumber.eq(depositNativeAmount);
     });
 
     it('withdraw multiple tokens', async function() {
@@ -252,7 +231,7 @@ contract('AWallet', function([_, owner, user]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -276,13 +255,8 @@ contract('AWallet', function([_, owner, user]) {
         depositTokenBAmount
       );
 
-      //remove 0x and trans into big number for later calculation
-      gasPrice = new BN(receipt.receipt.effectiveGasPrice.substring(2), 16);
-
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        withdrawNativeAmount
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed).mul(gasPrice))
+        withdrawNativeAmount.sub(dummyAmount)
       );
     });
 

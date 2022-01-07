@@ -80,6 +80,7 @@ async function addAngel(
 }
 
 contract('ATrevi', function([_, owner, collector, user, dummy]) {
+  let id;
   let initialEvmId;
 
   const stakingTokenAddress = DAI_TOKEN;

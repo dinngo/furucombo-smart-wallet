@@ -37,6 +37,7 @@ const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 
 contract('AFurucombo', function([_, owner, user]) {
+  let id;
   let initialEvmId;
 
   const tokenAddress = WETH_TOKEN;

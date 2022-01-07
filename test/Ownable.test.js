@@ -5,6 +5,7 @@ const { evmRevert, evmSnapshot } = require('./utils/utils');
 const Ownable = artifacts.require('OwnableActionMock');
 
 contract('OwnableAction', function([_, owner]) {
+  let id;
   let initialEvmId;
 
   before(async function() {

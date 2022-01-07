@@ -11,6 +11,7 @@ const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 
 contract('DestructibleAction', function([_, owner, other]) {
+  let id;
   let initialEvmId;
 
   before(async function() {
