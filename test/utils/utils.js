@@ -1,7 +1,7 @@
-const { BN, ether } = require('@openzeppelin/test-helpers');
+const { BN } = require('@openzeppelin/test-helpers');
 const fetch = require('node-fetch');
 const { expect } = require('chai');
-const { MATIC_PROVIDER, RecordActionResultSig } = require('./constants');
+const { RecordActionResultSig } = require('./constants');
 
 function profileGas(receipt) {
   receipt.logs.forEach(element => {
@@ -118,6 +118,11 @@ function getCallActionData(ethValue, contract, funcName, params) {
   );
 }
 
+async function impersonate(address) {
+  // Impersonate pair
+  await network.provider.send('hardhat_impersonateAccount', [address]);
+}
+
 function expectEqWithinBps(actual, expected, bps = 1) {
   const base = new BN('10000');
   const upper = new BN(expected).mul(base.add(new BN(bps))).div(base);
@@ -139,5 +144,6 @@ module.exports = {
   getCallData,
   getCreated,
   getCallActionData,
+  impersonate,
   expectEqWithinBps,
 };

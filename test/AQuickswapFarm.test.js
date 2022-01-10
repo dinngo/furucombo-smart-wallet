@@ -1,10 +1,4 @@
-const {
-  BN,
-  ether,
-  expectRevert,
-  time,
-  constants,
-} = require('@openzeppelin/test-helpers');
+const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
 const {
@@ -20,9 +14,9 @@ const {
 const {
   evmRevert,
   evmSnapshot,
-  profileGas,
   getCallData,
   getActionReturn,
+  impersonate,
 } = require('./utils/utils');
 
 const AQuickswapFarm = artifacts.require('AQuickswapFarm');
@@ -40,6 +34,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
   const fee = new BN('2000'); // 20% harvest fee
 
+  let id;
   let initialEvmId;
   before(async function() {
     initialEvmId = await evmSnapshot();
@@ -47,6 +42,9 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
     this.lpToken = await IToken.at(lpTokenAddress);
     this.dQuick = await IDQuick.at(QUICKSWAP_DQUICK);
     this.quick = await IDQuick.at(QUICKSWAP_QUICK);
+
+    await impersonate(lpTokenProvider);
+    await impersonate(QUICKSWAP_DQUICK_PROVIDER);
 
     this.stakingRewardsFactory = await IStakingRewardsFactory.at(
       QUICKSWAP_STAKING_REWARD_FACTORY
@@ -65,10 +63,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
 
     // Create user dsproxy
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
-    const dsProxyAddr = await this.dsRegistry.proxies.call(user);
-    if (dsProxyAddr == constants.ZERO_ADDRESS) {
-      await this.dsRegistry.build(user);
-    }
+    await this.dsRegistry.build(user);
     this.userProxy = await IDSProxy.at(
       await this.dsRegistry.proxies.call(user)
     );

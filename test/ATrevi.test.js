@@ -6,10 +6,12 @@ const {
   expectRevert,
   time,
 } = require('@openzeppelin/test-helpers');
+
 const { duration, increase, latest } = time;
 const { ZERO_ADDRESS } = constants;
 const abi = require('ethereumjs-abi');
 const { expect } = require('chai');
+
 const {
   DAI_TOKEN,
   DAI_PROVIDER,
@@ -20,6 +22,7 @@ const {
   WETH_TOKEN,
   DS_PROXY_REGISTRY,
 } = require('./utils/constants');
+
 const {
   evmRevert,
   evmSnapshot,
@@ -27,6 +30,7 @@ const {
   getCreated,
   getActionReturn,
   getCallData,
+  impersonate,
 } = require('./utils/utils');
 
 const TaskExecutor = artifacts.require('TaskExecutorMock');
@@ -76,6 +80,9 @@ async function addAngel(
 }
 
 contract('ATrevi', function([_, owner, collector, user, dummy]) {
+  let id;
+  let initialEvmId;
+
   const stakingTokenAddress = DAI_TOKEN;
   const stakingTokenProvider = DAI_PROVIDER;
   const rewardTokenAAddress = WMATIC_TOKEN;
@@ -86,6 +93,12 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
   const dummyAmount = ether('0.01');
 
   before(async function() {
+    initialEvmId = await evmSnapshot();
+
+    await impersonate(rewardTokenAProvider);
+    await impersonate(rewardTokenBProvider);
+    await impersonate(stakingTokenProvider);
+
     const defaultFlashloanFee = new BN(10);
     this.stakingToken = await IToken.at(stakingTokenAddress);
     this.rewardTokenA = await IToken.at(rewardTokenAAddress);
@@ -187,6 +200,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
   afterEach(async function() {
     await evmRevert(id);
+  });
+
+  after(async function() {
+    await evmRevert(initialEvmId);
   });
 
   describe('collector', function() {

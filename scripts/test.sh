@@ -1,62 +1,78 @@
-# Exit script as soon as a command fails.
+#!/bin/bash
+
 # Exit script as soon as a command fails.
 set -o errexit
 
 # Executes cleanup function at script exit.
 trap cleanup EXIT
 
+hardhat_port=8545
+
+# get args with count nums
+op=${@: 1:1}
+tests=${@: 2:$#}
+
+# magic block num for ensuring all test cases should pass before any dev changes
+block_num='21411286'
+
 cleanup() {
-    # kill the ganache instance that we started (if we started one and if it's still running).
-    if [ -n "$ganache_pid" ] && ps -p $ganache_pid > /dev/null; then
-        kill -9 $ganache_pid
+    # kill hardhat instances run by this script
+    if [[ ${need_to_clean} != 1 ]]; then
+        exit 0
     fi
+
+    for hardhat_pid in ${hardhat_pids}
+    do
+        # kill the hardhat instance that we started (if we started one and if it's still running).
+        if [ -n "$hardhat_pid" ] && ps -p ${hardhat_pid} > /dev/null; then
+            kill -9 ${hardhat_pid}
+            echo "killed hardhat" ${hardhat_pid}
+        fi
+    done
 }
 
-ganache_port=8545
-
-ganache_running() {
-    nc -z localhost "$ganache_port"
+hardhat_running() {
+    nc -z localhost "$hardhat_port"
 }
 
-start_ganache() {
-    TEST_MNEMONIC_PHRASE="dice shove sheriff police boss indoor hospital vivid tenant method game matter"
-    MATIC_PROVIDER='0x986a2fCa9eDa0e06fBf7839B89BfC006eE2a23Dd'
-    WMATIC_PROVIDER='0xc803698a4BE31F0B9035B6eBA17623698f3E2F82'
-    WETH_PROVIDER='0xF59E93290383ED15F73Ee923EbbF29f79e37B6d8'
-    DAI_PROVIDER="0xBA12222222228d8Ba445958a75a0704d566BF2C8"
-    WBTC_PROVIDER="0x6AF54856Ae6033c5313B331ebD9C8ef17d48714b"
-    BAT_PROVIDER="0x7779F9b5851d2800c32dBF9e7Bc5F6eF9Ba7c301"
-    USDT_PROVIDER="0x51E3D44172868Acc60D68ca99591Ce4230bc75E0"
-    COMP_PROVIDER="0xeF18CA5fbb98C30F06ce45cEd7d8a87825fA9fDf"
-    USDC_PROVIDER="0x986a2fCa9eDa0e06fBf7839B89BfC006eE2a23Dd"
-    CRV_PROVIDER="0x3E0a5FdE01ab05186F7808B3aE0cFDbcf844d3Ae"
-    YFI_PROVIDER="0xa3dcfd89481f6Fb20CCAc4D3A997267FC8C44366"
-    SNX_PROVIDER="0x77C09829F65E8952dfb80629F6d004DF324f512F"
-    OMG_PROVIDER="0x3a1bbd14c1c0e2Ebf7cd906961d122dADd5448A7"
-    SUSHI_PROVIDER="0x9D945d909Ca91937d19563e30bB4DAc12C860189"
-    CURVE_AAVE_PROVIDER='0xA1C4Aac752043258c1971463390013e6082C106f'
-    AUSDT_V2_PROVIDER='0x2B67A3c0b90f6aE4394210692F69968D02970126'
-    ADAI_V2_PROVIDER='0x2f93524B327100Fba3dc685204f94c7A86C28A8B'
-    AUSDC_V2_PROVIDER='0x2B67A3c0b90f6aE4394210692F69968D02970126'
-    CURVE_ATRICRYPTOCRV_PROVIDER='0x007CB2D47f161620Cd6Ce46fACc1e2F6D5fd6bB9'
-    FURUCOMBO_REGISTRY_OWNER='0x64585922a9703d9EdE7d353a6522eb2970f75066'
-    QUICKSWAP_WETH_QUICK_PROVIDER='0xf6238A4e92f98B1482c61f0dEa615770407337B1'
-    QUICKSWAP_DQUICK_PROVIDER='0xCf0B86f9944A60A0ba22b51a33C11d9E4dE1CE9F'
-
-    # node_modules/.bin/ganache-cli --gasLimit 0xfffffffffff -m "$TEST_MNEMONIC_PHRASE" > /dev/null &
-    node_modules/.bin/ganache-cli --gasLimit 0xfffffffffff --debug -f $POLYGON_MAINNET_NODE -m "$TEST_MNEMONIC_PHRASE" -u "$MATIC_PROVIDER" -u "$WMATIC_PROVIDER" -u "$DAI_PROVIDER" -u "$BAT_PROVIDER" -u "$USDT_PROVIDER" -u "$COMP_PROVIDER" -u "$WBTC_PROVIDER" -u "$YFI_PROVIDER" -u "$OMG_PROVIDER" -u "$SUSHI_PROVIDER" -u "$WETH_PROVIDER" -u "$CURVE_AAVE_PROVIDER" -u "$AUSDT_V2_PROVIDER" -u "$ADAI_V2_PROVIDER" -u "$AUSDC_V2_PROVIDER" -u "$CURVE_ATRICRYPTOCRV_PROVIDER" -u "$FURUCOMBO_REGISTRY_OWNER" -u "$QUICKSWAP_WETH_QUICK_PROVIDER" -u "$QUICKSWAP_DQUICK_PROVIDER" > /dev/null &
-
-    ganache_pid=$!
+start_hardhat() {
+    # latestblock is for testing on the latest block status
+    # setblock is for testing on a specific block number for narrowing dev bugs down to revised parts (excluding blockchain status)
+    if [[ ${op} = 'latestblock' ]]; then
+        npx hardhat node --fork ${POLYGON_MAINNET_NODE} --no-deploy >/dev/null &
+        echo "fork latest block from POLYGON_MAINNET_NODE:" ${POLYGON_MAINNET_NODE}
+    elif [[ ${op} = 'setblock' ]]; then
+        npx hardhat node --fork ${POLYGON_MAINNET_NODE} --fork-block-number $block_num --no-deploy >/dev/null &
+        echo "fork block" ${block_num} "from POLYGON_MAINNET_NODE:" ${POLYGON_MAINNET_NODE}
+    else
+        echo "exit due to unkown op:" ${op}
+        exit 1
+    fi
+    need_to_clean=1
+    echo "no deployment script will be executed"
 }
 
-if ganache_running; then
-    echo "Using existing ganache instance"
+wait_hardhat_ready() {
+    while ! hardhat_running
+    do
+        sleep 3
+    done
+    hardhat_pids=`ps aux | grep hardhat | awk '{ print $2 }'`
+    echo "hardhat pids:" ${hardhat_pids}
+}
+
+echo "running tests:" ${tests}
+
+if hardhat_running; then
+    echo "Using the existing hardhat network instance"
 else
-    echo "Starting new ganache instance"
-    start_ganache
+    echo "Starting a new hardhat network instance"
+    start_hardhat
 fi
 
-truffle version
+wait_hardhat_ready
 
-# Execute rest test files with suffix `.test.js` with single `truffle test`
-node_modules/.bin/truffle test "$@"
+npx hardhat --version
+
+# Execute rest test files with suffix `.test.js`
+npx hardhat --network localhost test $tests
