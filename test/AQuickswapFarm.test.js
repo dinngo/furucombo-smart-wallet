@@ -137,7 +137,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: insuifficient LP token', async function() {
+    it('should revert: insufficient LP token', async function() {
       // prepare data
       const stakeAmount = ether('1');
       const data = getCallData(TaskExecutor, 'execMock', [
