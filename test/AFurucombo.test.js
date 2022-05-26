@@ -15,7 +15,6 @@ const {
   WMATIC_TOKEN,
   DAI_TOKEN,
   WETH_TOKEN,
-  WETH_PROVIDER,
   DS_PROXY_REGISTRY,
 } = require('./utils/constants');
 const {
@@ -25,6 +24,7 @@ const {
   getActionReturn,
   getCallData,
   impersonate,
+  tokenProviderQuick,
 } = require('./utils/utils');
 const { BN } = require('@openzeppelin/test-helpers/src/setup');
 
@@ -39,13 +39,19 @@ const IDSProxy = artifacts.require('IDSProxy');
 contract('AFurucombo', function([_, owner, user]) {
   let id;
   let initialEvmId;
+  let tokenProvider;
 
   const tokenAddress = WETH_TOKEN;
-  const tokenProvider = WETH_PROVIDER;
   const tokenOutAddress = DAI_TOKEN;
 
   before(async function() {
     initialEvmId = await evmSnapshot();
+
+    // Get token provider
+    this.tokenProvider = await tokenProviderQuick(
+      tokenAddress,
+      tokenOutAddress
+    );
 
     // Create actions
     this.executor = await TaskExecutor.new(owner);
@@ -60,7 +66,6 @@ contract('AFurucombo', function([_, owner, user]) {
     await send.ether(user, FURUCOMBO_REGISTRY_OWNER, ether('1'));
 
     //impersonate address
-    await impersonate(tokenProvider);
     await impersonate(FURUCOMBO_REGISTRY_OWNER);
 
     await this.registry.register(
@@ -140,7 +145,7 @@ contract('AFurucombo', function([_, owner, user]) {
       ]);
 
       await this.token.transfer(this.userProxy.address, amountsIn[1], {
-        from: tokenProvider,
+        from: this.tokenProvider,
       });
 
       // Execute
@@ -221,7 +226,7 @@ contract('AFurucombo', function([_, owner, user]) {
       ]);
 
       await this.token.transfer(this.userProxy.address, amountsIn[0], {
-        from: tokenProvider,
+        from: this.tokenProvider,
       });
 
       // Execute
@@ -284,7 +289,7 @@ contract('AFurucombo', function([_, owner, user]) {
       ]);
 
       await this.token.transfer(this.userProxy.address, amountsIn[0], {
-        from: tokenProvider,
+        from: this.tokenProvider,
       });
 
       await this.userProxy.execute(this.executor.address, data, {
@@ -320,7 +325,7 @@ contract('AFurucombo', function([_, owner, user]) {
       ]);
 
       await this.token.transfer(this.userProxy.address, amountsIn[0], {
-        from: tokenProvider,
+        from: this.tokenProvider,
       });
 
       await expectRevert(
@@ -353,7 +358,7 @@ contract('AFurucombo', function([_, owner, user]) {
       ]);
 
       await this.token.transfer(this.userProxy.address, amountsIn[0], {
-        from: tokenProvider,
+        from: this.tokenProvider,
       });
 
       await expectRevert(

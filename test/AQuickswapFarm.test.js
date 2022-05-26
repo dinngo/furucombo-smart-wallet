@@ -31,7 +31,7 @@ const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
-  const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
+  let lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
   const fee = new BN('2000'); // 20% harvest fee
 
   let id;
