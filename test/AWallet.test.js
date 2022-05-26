@@ -45,8 +45,6 @@ contract('AWallet', function([_, owner, user]) {
     // Get token provider
     tokenProvider = await tokenProviderQuick(tokenAAddress, tokenBAddress);
 
-    console.log(tokenProvider);
-
     this.tokenAProviderAddress = tokenProvider;
     this.tokenBProviderAddress = tokenProvider;
 
