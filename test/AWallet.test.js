@@ -14,16 +14,14 @@ const {
   DS_PROXY_REGISTRY,
   NATIVE_TOKEN,
   DAI_TOKEN,
-  DAI_PROVIDER,
-  BAT_TOKEN,
-  BAT_PROVIDER,
+  WETH_TOKEN,
 } = require('./utils/constants');
 
 const {
   evmRevert,
   evmSnapshot,
   getCallData,
-  impersonate,
+  tokenProviderQuick,
 } = require('./utils/utils');
 
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
@@ -35,16 +33,20 @@ contract('AWallet', function([_, owner, user]) {
   let id;
   let initialEvmId;
 
+  let tokenAProviderAddress;
+  let tokenBProviderAddress;
+
   const tokenAAddress = DAI_TOKEN;
-  const tokenAProviderAddress = DAI_PROVIDER;
-  const tokenBAddress = BAT_TOKEN;
-  const tokenBProviderAddress = BAT_PROVIDER;
+  const tokenBAddress = WETH_TOKEN;
 
   before(async function() {
     initialEvmId = await evmSnapshot();
 
-    await impersonate(tokenAProviderAddress);
-    await impersonate(tokenBProviderAddress);
+    // Get token provider
+    tokenProvider = await tokenProviderQuick(tokenAAddress, tokenBAddress);
+
+    this.tokenAProviderAddress = tokenProvider;
+    this.tokenBProviderAddress = tokenProvider;
 
     this.tokenA = await IToken.at(tokenAAddress);
     this.tokenB = await IToken.at(tokenBAddress);
@@ -77,11 +79,11 @@ contract('AWallet', function([_, owner, user]) {
     beforeEach(async function() {
       await send.ether(user, this.userProxy.address, depositNativeAmount);
       await this.tokenA.transfer(this.userProxy.address, depositTokenAAmount, {
-        from: tokenAProviderAddress,
+        from: this.tokenAProviderAddress,
       });
 
       await this.tokenB.transfer(this.userProxy.address, depositTokenBAmount, {
-        from: tokenBProviderAddress,
+        from: this.tokenBProviderAddress,
       });
       balanceUser.get();
       balanceProxy.get();

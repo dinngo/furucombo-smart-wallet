@@ -31,7 +31,7 @@ const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
   const lpTokenAddress = QUICKSWAP_WETH_QUICK;
-  const lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
+  let lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
   const fee = new BN('2000'); // 20% harvest fee
 
   let id;
@@ -137,7 +137,7 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
     });
 
-    it('should revert: insuifficient LP token', async function() {
+    it('should revert: insufficient LP token', async function() {
       // prepare data
       const stakeAmount = ether('1');
       const data = getCallData(TaskExecutor, 'execMock', [
