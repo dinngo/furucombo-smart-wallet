@@ -1,16 +1,4 @@
-const {
-  balance,
-  BN,
-  constants,
-  ether,
-  expectEvent,
-  expectRevert,
-  time,
-} = require('@openzeppelin/test-helpers');
-const { tracker } = balance;
-const { duration, increase, latest } = time;
-const abi = require('ethereumjs-abi');
-const utils = web3.utils;
+const { ether, expectRevert } = require('@openzeppelin/test-helpers');
 
 const { expect } = require('chai');
 
@@ -28,8 +16,11 @@ const FUNCTION_SIG_EXECUTE = '0x1cff79cd';
 
 contract('AAuth', function([_, owner, user, someone1, someone2]) {
   let id;
+  let initialEvmId;
 
   before(async function() {
+    initialEvmId = await evmSnapshot();
+
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     await this.dsRegistry.build(user);
     this.userProxy = await IDSProxy.at(
@@ -44,6 +35,10 @@ contract('AAuth', function([_, owner, user, someone1, someone2]) {
 
   afterEach(async function() {
     await evmRevert(id);
+  });
+
+  after(async function() {
+    await evmRevert(initialEvmId);
   });
 
   describe('Create DSGuard And Set', function() {

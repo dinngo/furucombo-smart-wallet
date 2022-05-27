@@ -1,7 +1,16 @@
-const { BN, ether } = require('@openzeppelin/test-helpers');
+const { BN } = require('@openzeppelin/test-helpers');
 const fetch = require('node-fetch');
 const { expect } = require('chai');
-const { MATIC_PROVIDER, RecordActionResultSig } = require('./constants');
+const {
+  QUICKSWAP_FACTORY,
+  SUSHISWAP_FACTORY,
+  DYFNSWAP_FACTORY,
+  CURVE_ADDRESS_PROVIDER,
+  WETH_TOKEN,
+  USDC_TOKEN,
+  WMATIC_TOKEN,
+  RecordActionResultSig,
+} = require('./constants');
 
 function profileGas(receipt) {
   receipt.logs.forEach(element => {
@@ -118,12 +127,110 @@ function getCallActionData(ethValue, contract, funcName, params) {
   );
 }
 
+async function impersonate(address) {
+  // Impersonate pair
+  await network.provider.send('hardhat_impersonateAccount', [address]);
+}
+
 function expectEqWithinBps(actual, expected, bps = 1) {
   const base = new BN('10000');
   const upper = new BN(expected).mul(base.add(new BN(bps))).div(base);
   const lower = new BN(expected).mul(base.sub(new BN(bps))).div(base);
   expect(actual).to.be.bignumber.lte(upper);
   expect(actual).to.be.bignumber.gte(lower);
+}
+
+async function maticProviderWmatic() {
+  // Impersonate wmatic
+  await network.provider.send('hardhat_impersonateAccount', [WMATIC_TOKEN]);
+
+  return WMATIC_TOKEN;
+}
+
+async function tokenProviderQuick(
+  token0 = USDC_TOKEN,
+  token1 = WETH_TOKEN,
+  factoryAddress = QUICKSWAP_FACTORY
+) {
+  if (token0 === WETH_TOKEN) {
+    token1 = USDC_TOKEN;
+  }
+  return _tokenProviderUniLike(token0, token1, factoryAddress);
+}
+
+async function tokenProviderSushi(
+  token0 = USDC_TOKEN,
+  token1 = WETH_TOKEN,
+  factoryAddress = SUSHISWAP_FACTORY
+) {
+  if (token0 === WETH_TOKEN) {
+    token1 = USDC_TOKEN;
+  }
+  return _tokenProviderUniLike(token0, token1, factoryAddress);
+}
+
+async function tokenProviderDyfn(
+  token0 = USDC_TOKEN,
+  token1 = WETH_TOKEN,
+  factoryAddress = DYFNSWAP_FACTORY
+) {
+  if (token0 === WETH_TOKEN) {
+    token1 = USDC_TOKEN;
+  }
+  return _tokenProviderUniLike(token0, token1, factoryAddress);
+}
+
+async function _tokenProviderUniLike(token0, token1, factoryAddress) {
+  const IUniswapV2Factory = artifacts.require('IUniswapV2Factory');
+  const factory = await IUniswapV2Factory.at(factoryAddress);
+  const pair = await factory.getPair(token0, token1);
+  impersonateAndInjectEther(pair);
+
+  return pair;
+}
+
+async function tokenProviderCurveGauge(lpToken) {
+  // Get curve registry
+  const addressProvider = await ethers.getContractAt(
+    ['function get_registry() view returns (address)'],
+    CURVE_ADDRESS_PROVIDER
+  );
+  const registryAddress = await addressProvider.get_registry();
+
+  // Get curve gauge
+  const registry = await ethers.getContractAt(
+    [
+      'function get_pool_from_lp_token(address) view returns (address)',
+      'function get_gauges(address) view returns (address[10], int128[10])',
+    ],
+    registryAddress
+  );
+  const poolAddress = await registry.get_pool_from_lp_token(lpToken);
+  const gauges = await registry.get_gauges(poolAddress);
+
+  // Return non-zero gauge
+  let gauge;
+  for (let element of gauges[0]) {
+    if (element != ZERO_ADDRESS) {
+      gauge = element;
+      break;
+    }
+  }
+  impersonateAndInjectEther(gauge);
+
+  return gauge;
+}
+
+async function impersonateAndInjectEther(address) {
+  // Impersonate pair
+  // await network.provider.send('hardhat_impersonateAccount', [address]);
+  await impersonate(address);
+
+  // Inject 1 ether
+  await network.provider.send('hardhat_setBalance', [
+    address,
+    '0xde0b6b3a7640000',
+  ]);
 }
 
 module.exports = {
@@ -139,5 +246,12 @@ module.exports = {
   getCallData,
   getCreated,
   getCallActionData,
+  impersonate,
   expectEqWithinBps,
+  maticProviderWmatic,
+  tokenProviderQuick,
+  tokenProviderSushi,
+  tokenProviderDyfn,
+  tokenProviderCurveGauge,
+  impersonateAndInjectEther,
 };

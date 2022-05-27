@@ -6,20 +6,20 @@ const {
   expectRevert,
   time,
 } = require('@openzeppelin/test-helpers');
+
 const { duration, increase, latest } = time;
 const { ZERO_ADDRESS } = constants;
 const abi = require('ethereumjs-abi');
 const { expect } = require('chai');
+
 const {
   DAI_TOKEN,
-  DAI_PROVIDER,
   SUSHI_TOKEN,
-  SUSHI_PROVIDER,
-  WMATIC_PROVIDER,
   WMATIC_TOKEN,
   WETH_TOKEN,
   DS_PROXY_REGISTRY,
 } = require('./utils/constants');
+
 const {
   evmRevert,
   evmSnapshot,
@@ -27,6 +27,8 @@ const {
   getCreated,
   getActionReturn,
   getCallData,
+  tokenProviderQuick,
+  tokenProviderSushi,
 } = require('./utils/utils');
 
 const TaskExecutor = artifacts.require('TaskExecutorMock');
@@ -76,16 +78,36 @@ async function addAngel(
 }
 
 contract('ATrevi', function([_, owner, collector, user, dummy]) {
+  let id;
+  let initialEvmId;
+
+  let stakingTokenProvider;
+  let rewardTokenAProvider;
+  let rewardTokenBProvider;
+
   const stakingTokenAddress = DAI_TOKEN;
-  const stakingTokenProvider = DAI_PROVIDER;
   const rewardTokenAAddress = WMATIC_TOKEN;
-  const rewardTokenAProvider = WMATIC_PROVIDER;
   const rewardTokenBAddress = SUSHI_TOKEN;
-  const rewardTokenBProvider = SUSHI_PROVIDER;
   const rewardTokenCAddress = WETH_TOKEN;
   const dummyAmount = ether('0.01');
 
   before(async function() {
+    initialEvmId = await evmSnapshot();
+
+    // Get token provider
+    tokenProvider = await tokenProviderQuick(
+      stakingTokenAddress,
+      rewardTokenAAddress
+    );
+    tokenProvider2 = await tokenProviderSushi(
+      rewardTokenBAddress,
+      rewardTokenCAddress
+    );
+
+    this.stakingTokenProvider = tokenProvider;
+    this.rewardTokenAProvider = tokenProvider;
+    this.rewardTokenBProvider = tokenProvider2;
+
     const defaultFlashloanFee = new BN(10);
     this.stakingToken = await IToken.at(stakingTokenAddress);
     this.rewardTokenA = await IToken.at(rewardTokenAAddress);
@@ -110,16 +132,16 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
     // Transfer reward token to deployer
     const rewardAAmount = await this.rewardTokenA.balanceOf.call(
-      rewardTokenAProvider
+      this.rewardTokenAProvider
     );
     await this.rewardTokenA.transfer(_, rewardAAmount, {
-      from: rewardTokenAProvider,
+      from: this.rewardTokenAProvider,
     });
     const rewardBAmount = await this.rewardTokenB.balanceOf.call(
-      rewardTokenBProvider
+      this.rewardTokenBProvider
     );
     await this.rewardTokenB.transfer(_, rewardBAmount, {
-      from: rewardTokenBProvider,
+      from: this.rewardTokenBProvider,
     });
 
     // Create and add Angel
@@ -189,6 +211,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     await evmRevert(id);
   });
 
+  after(async function() {
+    await evmRevert(initialEvmId);
+  });
+
   describe('collector', function() {
     it('has an collector', async function() {
       expect(await this.aTrevi.collector()).to.equal(collector);
@@ -210,7 +236,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Send token to user dsproxy
       await this.stakingToken.transfer(this.userProxy.address, stakingAmount, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
 
       // Execute
@@ -259,7 +285,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Send token to user dsproxy
       await this.stakingToken.transfer(this.userProxy.address, stakingAmount, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
 
       await expectRevert(
@@ -292,10 +318,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     beforeEach(async function() {
       // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
       await this.fountain.depositTo(stakingAmount, this.userProxy.address, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
       expect(
         await this.fountain.balanceOf(this.userProxy.address)
@@ -360,7 +386,7 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Send extra token to fountain
       await this.stakingToken.transfer(this.fountain.address, extra, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
 
       await expectRevert(
@@ -393,10 +419,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     beforeEach(async function() {
       // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
       await this.fountain.depositTo(stakingAmount, this.userProxy.address, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
       expect(
         await this.fountain.balanceOf(this.userProxy.address)
@@ -691,10 +717,10 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
     beforeEach(async function() {
       // Send ftn token to user dsproxy
       await this.stakingToken.approve(this.fountain.address, stakingAmount, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
       await this.fountain.depositTo(stakingAmount, this.userProxy.address, {
-        from: stakingTokenProvider,
+        from: this.stakingTokenProvider,
       });
       expect(
         await this.fountain.balanceOf(this.userProxy.address)

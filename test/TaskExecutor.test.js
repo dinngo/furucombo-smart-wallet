@@ -26,10 +26,13 @@ const TaskExecutor = artifacts.require('TaskExecutor');
 
 contract('TaskExecutor', function([_, user, someone]) {
   let id;
+  let initialEvmId;
   let balanceUser;
   let balanceSomeone;
 
   before(async function() {
+    initialEvmId = await evmSnapshot();
+
     this.dsProxyRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
     this.taskExecutor = await TaskExecutor.new(_);
     this.foo = await Foo.new();
@@ -50,6 +53,10 @@ contract('TaskExecutor', function([_, user, someone]) {
 
   afterEach(async function() {
     await evmRevert(id);
+  });
+
+  after(async function() {
+    await evmRevert(initialEvmId);
   });
 
   describe('execute', function() {
@@ -207,7 +214,7 @@ contract('TaskExecutor', function([_, user, someone]) {
             from: user,
             value: ether('0.01'),
           }),
-          'Address: delegate call to non-contract.'
+          'Address: delegate call to non-contract'
         );
       });
 

@@ -5,7 +5,11 @@ const { evmRevert, evmSnapshot } = require('./utils/utils');
 const Ownable = artifacts.require('OwnableActionMock');
 
 contract('OwnableAction', function([_, owner]) {
+  let id;
+  let initialEvmId;
+
   before(async function() {
+    initialEvmId = await evmSnapshot();
     this.ownable = await Ownable.new(owner);
   });
 
@@ -15,6 +19,10 @@ contract('OwnableAction', function([_, owner]) {
 
   afterEach(async function() {
     await evmRevert(id);
+  });
+
+  after(async function() {
+    await evmRevert(initialEvmId);
   });
 
   it('has an owner', async function() {

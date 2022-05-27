@@ -1,13 +1,11 @@
 const {
   balance,
   BN,
-  constants,
   ether,
-  expectEvent,
   expectRevert,
-  time,
   send,
 } = require('@openzeppelin/test-helpers');
+
 const { MAX_UINT256 } = require('@openzeppelin/test-helpers/src/constants');
 const { tracker } = balance;
 const { expect } = require('chai');
@@ -16,25 +14,40 @@ const {
   DS_PROXY_REGISTRY,
   NATIVE_TOKEN,
   DAI_TOKEN,
-  DAI_PROVIDER,
-  BAT_TOKEN,
-  BAT_PROVIDER,
+  WETH_TOKEN,
 } = require('./utils/constants');
-const { evmRevert, evmSnapshot, getCallData } = require('./utils/utils');
+
+const {
+  evmRevert,
+  evmSnapshot,
+  getCallData,
+  tokenProviderQuick,
+} = require('./utils/utils');
 
 const IDSProxyRegistry = artifacts.require('IDSProxyRegistry');
 const IDSProxy = artifacts.require('IDSProxy');
 const IToken = artifacts.require('IERC20');
 const AWallet = artifacts.require('AWallet');
 
-contract('AWallet', function([_, owner, user, someone1]) {
+contract('AWallet', function([_, owner, user]) {
   let id;
+  let initialEvmId;
+
+  let tokenAProviderAddress;
+  let tokenBProviderAddress;
+
   const tokenAAddress = DAI_TOKEN;
-  const tokenAProviderAddress = DAI_PROVIDER;
-  const tokenBAddress = BAT_TOKEN;
-  const tokenBProviderAddress = BAT_PROVIDER;
+  const tokenBAddress = WETH_TOKEN;
 
   before(async function() {
+    initialEvmId = await evmSnapshot();
+
+    // Get token provider
+    tokenProvider = await tokenProviderQuick(tokenAAddress, tokenBAddress);
+
+    this.tokenAProviderAddress = tokenProvider;
+    this.tokenBProviderAddress = tokenProvider;
+
     this.tokenA = await IToken.at(tokenAAddress);
     this.tokenB = await IToken.at(tokenBAddress);
     this.dsRegistry = await IDSProxyRegistry.at(DS_PROXY_REGISTRY);
@@ -55,6 +68,10 @@ contract('AWallet', function([_, owner, user, someone1]) {
     await evmRevert(id);
   });
 
+  after(async function() {
+    await evmRevert(initialEvmId);
+  });
+
   describe('withdraw token', function() {
     const depositNativeAmount = ether('5');
     const depositTokenAAmount = ether('10');
@@ -62,10 +79,11 @@ contract('AWallet', function([_, owner, user, someone1]) {
     beforeEach(async function() {
       await send.ether(user, this.userProxy.address, depositNativeAmount);
       await this.tokenA.transfer(this.userProxy.address, depositTokenAAmount, {
-        from: tokenAProviderAddress,
+        from: this.tokenAProviderAddress,
       });
+
       await this.tokenB.transfer(this.userProxy.address, depositTokenBAmount, {
-        from: tokenBProviderAddress,
+        from: this.tokenBProviderAddress,
       });
       balanceUser.get();
       balanceProxy.get();
@@ -81,7 +99,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -101,10 +119,9 @@ contract('AWallet', function([_, owner, user, someone1]) {
       expect(await this.tokenA.balanceOf.call(user)).to.be.bignumber.eq(
         withdrawAmount
       );
+
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        ether('0')
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed))
+        ether('0').sub(dummyAmount)
       );
     });
 
@@ -117,7 +134,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -137,10 +154,9 @@ contract('AWallet', function([_, owner, user, someone1]) {
       expect(await this.tokenA.balanceOf.call(user)).to.be.bignumber.eq(
         depositTokenAAmount
       );
+
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        ether('0')
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed))
+        ether('0').sub(dummyAmount)
       );
     });
 
@@ -154,7 +170,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -172,7 +188,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
 
       // Verify user balance
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        withdrawAmount.sub(dummyAmount).sub(new BN(receipt.receipt.gasUsed))
+        withdrawAmount.sub(dummyAmount)
       );
     });
 
@@ -185,7 +201,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -201,9 +217,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
 
       // Verify user balance
       // return all balance of DSProxy includes dummyAmount
-      expect(await balanceUser.delta()).to.be.bignumber.eq(
-        depositNativeAmount.sub(new BN(receipt.receipt.gasUsed))
-      );
+      expect(await balanceUser.delta()).to.be.bignumber.eq(depositNativeAmount);
     });
 
     it('withdraw multiple tokens', async function() {
@@ -219,7 +233,7 @@ contract('AWallet', function([_, owner, user, someone1]) {
       ]);
 
       // Execute
-      const receipt = await this.userProxy.execute(this.aWallet.address, data, {
+      await this.userProxy.execute(this.aWallet.address, data, {
         from: user,
         value: dummyAmount,
       });
@@ -242,10 +256,9 @@ contract('AWallet', function([_, owner, user, someone1]) {
       expect(await this.tokenB.balanceOf.call(user)).to.be.bignumber.eq(
         depositTokenBAmount
       );
+
       expect(await balanceUser.delta()).to.be.bignumber.eq(
-        withdrawNativeAmount
-          .sub(dummyAmount)
-          .sub(new BN(receipt.receipt.gasUsed))
+        withdrawNativeAmount.sub(dummyAmount)
       );
     });
 
