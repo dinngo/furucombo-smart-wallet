@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [1.2.1] - 2022-05-27
+
+### Changed
+
+- Optimize unit test cases
+
 ## [1.2.0] - 2022-01-07
 
 ### Added
