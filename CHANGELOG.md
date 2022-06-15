@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Fixed
+
+- Snapshot token amount after token inject in AFurucombo.
+- Test case for quickswap farming.
+
 ## [1.2.1] - 2022-05-27
 
 ### Changed
