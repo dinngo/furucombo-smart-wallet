@@ -266,6 +266,88 @@ contract('AFurucombo', function([_, owner, user]) {
       profileGas(receipt);
     });
 
+    it('swap native and token to the same token', async function() {
+      const tokensIn = [NATIVE_TOKEN, this.token.address];
+      const amountsIn = [ether('2'), ether('1')];
+      const tokensOut = [this.token.address, this.tokenOut.address];
+      const tos = [
+        this.hFunds.address,
+        FURUCOMBO_HQUICKSWAP,
+        FURUCOMBO_HQUICKSWAP,
+      ];
+      const configs = [
+        '0x0004000000000000000000000000000000000000000000000000000000000000', // return size = 4 (uint256[2])
+        '0x0100000000000000000102ffffffffffffffffffffffffffffffffffffffffff', // ref location = stack[2]
+        '0x0100000000000000000103ffffffffffffffffffffffffffffffffffffffffff', // ref location = stack[3]
+      ];
+      const datas = [
+        abi.simpleEncode('updateTokens(address[])', tokensIn),
+        abi.simpleEncode(
+          'swapExactETHForTokens(uint256,uint256,address[])',
+          0, // amountIn: 100% return data
+          1, // amountOutMin
+          [WMATIC_TOKEN, this.token.address] // path
+        ),
+        abi.simpleEncode(
+          'swapExactTokensForTokens(uint256,uint256,address[])',
+          0, // amountIn: 100% return data
+          1, // amountOutMin
+          [this.token.address, this.tokenOut.address] // path
+        ),
+      ];
+
+      // TaskExecutorMock data
+      const data = getCallData(TaskExecutor, 'execMock', [
+        this.aFurucombo.address,
+        getCallData(AFurucombo, 'injectAndBatchExec', [
+          tokensIn,
+          amountsIn,
+          tokensOut,
+          tos,
+          configs,
+          datas,
+        ]),
+      ]);
+
+      await this.token.transfer(this.userProxy.address, amountsIn[1], {
+        from: this.tokenProvider,
+      });
+
+      // Execute
+      const receipt = await this.userProxy.execute(
+        this.executor.address,
+        data,
+        { from: user, value: amountsIn[0] }
+      );
+
+      // Record after balance
+      const balanceAfter = await balance.current(this.userProxy.address);
+      const tokenAfter = await this.token.balanceOf.call(
+        this.userProxy.address
+      );
+      const tokenOutAfter = await this.tokenOut.balanceOf.call(
+        this.userProxy.address
+      );
+      const tokenFurucomboAfter = await this.token.balanceOf.call(
+        FURUCOMBO_PROXY
+      );
+
+      // Verify action return
+      const actionReturn = getActionReturn(receipt, ['uint256[]'])[0];
+      expect(actionReturn[0]).to.be.bignumber.eq(tokenAfter);
+      expect(actionReturn[1]).to.be.bignumber.eq(tokenOutAfter);
+
+      // Verify user dsproxy
+      expect(balanceAfter).to.be.bignumber.zero;
+      expect(tokenAfter).to.be.bignumber.gt(ether('0'));
+      expect(tokenOutAfter).to.be.bignumber.gt(ether('0'));
+
+      // Verify furucombo proxy
+      expect(tokenFurucomboAfter).to.be.bignumber.lt(this.furucomboTokenDust);
+
+      profileGas(receipt);
+    });
+
     it('remaining tokens < token dust', async function() {
       const amountIn = this.furucomboTokenDust.sub(new BN(1));
       const tokensIn = [this.token.address];

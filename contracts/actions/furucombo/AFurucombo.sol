@@ -46,14 +46,16 @@ contract AFurucombo is
         bytes32[] calldata configs,
         bytes[] memory datas
     ) external payable delegateCallOnly returns (uint256[] memory) {
+        // Inject and execute combo
+        _inject(tokensIn, amountsIn);
+
         // Snapshot output token amounts
         uint256[] memory amountsOut = new uint256[](tokensOut.length);
         for (uint256 i = 0; i < tokensOut.length; i++) {
             amountsOut[i] = _getBalance(tokensOut[i]);
         }
 
-        // Inject and execute combo
-        _inject(tokensIn, amountsIn);
+        // Execute furucombo proxy batchExec
         try IFurucombo(proxy).batchExec(tos, configs, datas) {} catch Error(
             string memory reason
         ) {

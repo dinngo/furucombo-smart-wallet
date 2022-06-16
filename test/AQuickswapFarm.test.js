@@ -3,8 +3,8 @@ const { expect } = require('chai');
 
 const {
   DS_PROXY_REGISTRY,
-  QUICKSWAP_WETH_QUICK,
-  QUICKSWAP_WETH_QUICK_PROVIDER,
+  QUICKSWAP_DAI_WETH,
+  QUICKSWAP_DAI_WETH_PROVIDER,
   QUICKSWAP_QUICK,
   QUICKSWAP_DQUICK,
   QUICKSWAP_DQUICK_PROVIDER,
@@ -30,8 +30,8 @@ const IStakingRewards = artifacts.require('IStakingRewards');
 const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
-  const lpTokenAddress = QUICKSWAP_WETH_QUICK;
-  let lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
+  const lpTokenAddress = QUICKSWAP_DAI_WETH;
+  let lpTokenProvider = QUICKSWAP_DAI_WETH_PROVIDER;
   const fee = new BN('2000'); // 20% harvest fee
 
   let id;
