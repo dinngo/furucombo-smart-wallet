@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+### Added
+
+- Quickswap dual mining.
+- Charged event in quickswap farming.
+
 ### Fixed
 
 - Snapshot token amount after token inject in AFurucombo.
