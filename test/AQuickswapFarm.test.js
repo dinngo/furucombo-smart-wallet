@@ -15,6 +15,7 @@ const {
   evmRevert,
   evmSnapshot,
   getCallData,
+  getEventArgs,
   getActionReturn,
   impersonate,
 } = require('./utils/utils');
@@ -288,6 +289,24 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       const collectorRewardAmountAfter = await this.dQuick.balanceOf.call(
         collector
       );
+
+      // event
+      const eventSig =
+        '0x723eef8aef532171f96963cca1a7d498b80f600e9f55c666d25eabe385a59b74'; // Charged(address,address[1],uint256[1])
+
+      const eventArgs = getEventArgs(receipt, eventSig, [
+        'address',
+        'address',
+        'uint256',
+      ]);
+
+      const eStakingContract = eventArgs[0];
+      const eRewardToken = eventArgs[1];
+      const eCollectorReward = new BN(eventArgs[2]);
+
+      expect(eStakingContract).to.be.eq(this.stakingRewardsContract.address);
+      expect(eRewardToken).to.be.eq(this.dQuick.address);
+      expect(eCollectorReward).to.be.bignumber.eq(expectCollectorReward);
 
       // user reward should greater or equal expectUserReward
       expect(userReward).to.be.bignumber.gte(expectUserReward);
