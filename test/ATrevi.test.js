@@ -26,6 +26,7 @@ const {
   profileGas,
   getCreated,
   getActionReturn,
+  getEventArgs,
   getCallData,
   tokenProviderQuick,
   tokenProviderSushi,
@@ -498,16 +499,46 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Verify fee
       const baseFee = new BN('10000');
+      const expectCollectorRewardA = rewardAAfter
+        .mul(this.fee)
+        .div(baseFee.sub(this.fee));
       expect(
         await this.rewardTokenA.balanceOf.call(collector)
-      ).to.be.bignumber.eq(
-        rewardAAfter.mul(this.fee).div(baseFee.sub(this.fee))
-      );
+      ).to.be.bignumber.eq(expectCollectorRewardA);
+      const expectCollectorRewardB = rewardBAfter
+        .mul(this.fee)
+        .div(baseFee.sub(this.fee));
       expect(
         await this.rewardTokenB.balanceOf.call(collector)
-      ).to.be.bignumber.eq(
-        rewardBAfter.mul(this.fee).div(baseFee.sub(this.fee))
-      );
+      ).to.be.bignumber.eq(expectCollectorRewardB);
+
+      // Verify event
+      eventSig =
+        '0x76aa03996bb864a9bb34f4e4245898b8af8527f026e6cb99c870bea43c63e028';
+
+      const eventArgs = getEventArgs(receipt, eventSig, [
+        'address',
+        'bytes32', // mem offset of second param
+        'bytes32', // mem offset of third param
+        'uint256', // length of dynamic array
+        'address',
+        'address',
+        'uint256', // length of dynamic array
+        'uint256',
+        'uint256',
+      ]);
+
+      const eStakingContract = eventArgs[0];
+      const eRewardTokenA = eventArgs[4];
+      const eRewardTokenB = eventArgs[5];
+      const eCollectorRewardA = new BN(eventArgs[7]);
+      const eCollectorRewardB = new BN(eventArgs[8]);
+
+      expect(eStakingContract).to.be.eq(this.fountain.address);
+      expect(eRewardTokenA).to.be.eq(this.rewardTokenA.address);
+      expect(eRewardTokenB).to.be.eq(this.rewardTokenB.address);
+      expect(eCollectorRewardA).to.be.bignumber.eq(expectCollectorRewardA);
+      expect(eCollectorRewardB).to.be.bignumber.eq(expectCollectorRewardB);
 
       profileGas(receipt);
     });
