@@ -292,20 +292,21 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
 
       // event
       const eventSig =
-        '0x723eef8aef532171f96963cca1a7d498b80f600e9f55c666d25eabe385a59b74'; // Charged(address,address[1],uint256[1])
+        '0xce248872ec99b43a7155e445b7d166cb590ee7bc73ef870908c78a6c48d06739'; // Charged(address,address,uint256)
 
-      const eventArgs = getEventArgs(receipt, eventSig, [
-        'address',
-        'address',
-        'uint256',
-      ]);
+      const topics = [
+        eventSig,
+        this.stakingRewardsContract.address,
+        this.dQuick.address,
+      ];
 
-      const eStakingContract = eventArgs[0];
-      const eRewardToken = eventArgs[1];
-      const eCollectorReward = new BN(eventArgs[2]);
+      const eCollectorReward = getEventArgs(
+        receipt,
+        topics,
+        ['bytes32', 'address', 'address'],
+        ['uint256']
+      )[0];
 
-      expect(eStakingContract).to.be.eq(this.stakingRewardsContract.address);
-      expect(eRewardToken).to.be.eq(this.dQuick.address);
       expect(eCollectorReward).to.be.bignumber.eq(expectCollectorReward);
 
       // user reward should greater or equal expectUserReward

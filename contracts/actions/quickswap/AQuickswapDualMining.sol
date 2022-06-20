@@ -34,18 +34,12 @@ contract AQuickswapDualMining is
     uint256 public immutable harvestFee;
     uint256 public constant FEE_BASE = 1e4;
 
-    event Charged(
-        address stakingDualRewards,
-        address[2] tokenAddresses,
-        uint256[2] feeAmount
-    );
-
     constructor(
         address payable _owner,
         address _collector,
         uint256 _fee
     ) public DestructibleAction(_owner) DelegateCallAction() {
-        require(_fee <= FEE_BASE, "AQuickswapFarm: fee rate exceeded");
+        require(_fee <= FEE_BASE, "AQuickswapDualMining: fee rate exceeded");
         collector = _collector;
         harvestFee = _fee;
     }
@@ -74,12 +68,12 @@ contract AQuickswapDualMining is
 
     /// @notice Harvest from dual mining pool.
     /// @param token The LP token of Quickswap pool.
-    /// @return rewardsTokenAAmount rewardsTokenBAmount The reward tokens amount.
+    /// @return The reward tokens amount.
     function getRewardAndCharge(address token)
         external
         payable
         delegateCallOnly
-        returns (uint256 rewardsTokenAAmount, uint256 rewardsTokenBAmount)
+        returns (uint256, uint256)
     {
         IStakingDualRewards stakingDualRewards =
             _getStakingDualRewardsContract(token);
@@ -91,25 +85,23 @@ contract AQuickswapDualMining is
         // charge fee.
         uint256 feeA = fee(rewardA);
         uint256 feeB = fee(rewardB);
-        rewardTokenA.transfer(collector, feeA);
-        rewardTokenB.transfer(collector, feeB);
+        rewardTokenA.safeTransfer(collector, feeA);
+        rewardTokenB.safeTransfer(collector, feeB);
 
-        emit Charged(
-            address(stakingDualRewards),
-            [address(rewardTokenA), address(rewardTokenB)],
-            [feeA, feeB]
-        );
+        emit Charged(address(stakingDualRewards), address(rewardTokenA), feeA);
+        emit Charged(address(stakingDualRewards), address(rewardTokenB), feeB);
+
         return (rewardA.sub(feeA), rewardB.sub(feeB));
     }
 
     /// @notice Harvest from dual mining pool.
     /// @param token The LP token of Quickswap pool.
-    /// @return rewardsTokenAAmount rewardsTokenBAmount The reward tokens amount.
+    /// @return The reward tokens amount.
     function getReward(address token)
         external
         payable
         delegateCallOnly
-        returns (uint256 rewardsTokenAAmount, uint256 rewardsTokenBAmount)
+        returns (uint256, uint256)
     {
         return _getReward(token);
     }
@@ -117,21 +109,21 @@ contract AQuickswapDualMining is
     /// @notice Claim back Quick.
     /// @param amount The amount of dQuick.
     /// @return Amount of Quick.
-    function leave(uint256 amount)
+    function dQuickLeave(uint256 amount)
         external
         payable
         delegateCallOnly
         returns (uint256)
     {
-        _requireMsg(amount > 0, "leave", "zero amount");
+        _requireMsg(amount > 0, "dQuickLeave", "zero amount");
         // Quick amount before leave
         uint256 quickAmountBefore = quick.balanceOf(address(this));
 
         // leave
         try dQuick.leave(amount) {} catch Error(string memory reason) {
-            _revertMsg("leave", reason);
+            _revertMsg("dQuickLeave", reason);
         } catch {
-            _revertMsg("leave");
+            _revertMsg("dQuickLeave");
         }
 
         // Quick amount after leave
@@ -143,7 +135,8 @@ contract AQuickswapDualMining is
     /// @notice Withdraw staking token and rewards from dual mining pool.
     /// @param token The LP token of Quickswap pool.
     /// @return lpAmount Amount of LP token.
-    /// @return rewardTokenAAmount rewardTokenBAmount Reward token amount.
+    /// @return rewardTokenAAmount Amount of reward tokenA.
+    /// @return rewardTokenBAmount Amount of reward tokenB.
     function exit(address token)
         external
         payable
@@ -183,10 +176,15 @@ contract AQuickswapDualMining is
         // LP token amount after exit
         uint256 lpAmountAfter = IERC20(token).balanceOf(address(this));
 
-        return (
-            lpAmountAfter.sub(lpAmountBefore),
-            rewardTokenAAmountAfter.sub(rewardTokenAAmountBefore),
-            rewardTokenBAmountAfter.sub(rewardTokenBAmountBefore)
+        // return
+        lpAmount = lpAmountAfter.sub(lpAmountBefore);
+
+        rewardTokenAAmount = rewardTokenAAmountAfter.sub(
+            rewardTokenAAmountBefore
+        );
+
+        rewardTokenBAmount = rewardTokenBAmountAfter.sub(
+            rewardTokenBAmountBefore
         );
     }
 
@@ -197,10 +195,7 @@ contract AQuickswapDualMining is
         return (amount.mul(harvestFee)).div(FEE_BASE);
     }
 
-    function _getReward(address token)
-        private
-        returns (uint256 rewardsTokenAAmount, uint256 rewardsTokenBAmount)
-    {
+    function _getReward(address token) private returns (uint256, uint256) {
         IStakingDualRewards stakingDualRewards =
             _getStakingDualRewardsContract(token);
 
@@ -255,7 +250,7 @@ contract AQuickswapDualMining is
     }
 
     /// @notice Get staking rewards tokens in the dual mining page.
-    /// @dev Get staking rewards contract from stakingDualRewardsFactory.
+    /// @dev Get staking rewards tokens from stakingDualRewardsFactory.
     /// @param token The LP token of Quickswap pool.
     /// @return rewardsTokenA rewardsTokenB The staking rewards tokens.
     function _getStakingDualRewardsTokens(address token)

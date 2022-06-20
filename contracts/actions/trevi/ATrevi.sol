@@ -26,12 +26,6 @@ contract ATrevi is
     uint256 public immutable harvestFee;
     uint256 public constant FEE_BASE = 1e4;
 
-    event Charged(
-        address fountain,
-        address[] tokenAddress,
-        uint256[] feeAmount
-    );
-
     constructor(
         address payable _owner,
         address _archangel,
@@ -149,9 +143,6 @@ contract ATrevi is
             amountsOut[i] = _getBalance(tokensOut[i]);
         }
 
-        address[] memory rewardTokens = new address[](angels.length);
-        uint256[] memory rewardAmounts = new uint256[](angels.length);
-
         for (uint256 i = 0; i < angels.length; i++) {
             if (isCharge) {
                 // Get grace amount before harvest if fee charging
@@ -164,19 +155,11 @@ contract ATrevi is
                 // Send charging fee to collector
                 amountGrace = _getBalance(grace).sub(amountGrace);
                 IERC20(grace).safeTransfer(collector, fee(amountGrace));
-
-                // Save information for event
-                rewardTokens[i] = grace;
-                rewardAmounts[i] = fee(amountGrace);
+                emit Charged(address(fountain), grace, fee(amountGrace));
             } else {
                 // Fountain harvest
                 _fountainHarvest(fountain, angels[i]);
             }
-        }
-
-        // Send event
-        if (isCharge) {
-            emit Charged(address(fountain), rewardTokens, rewardAmounts);
         }
 
         // Calculate increased output token amounts

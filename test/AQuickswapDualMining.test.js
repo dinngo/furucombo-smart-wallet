@@ -383,25 +383,34 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
 
       // event
       const eventSig =
-        '0x10a5a7dcbe58723f464418da817090d9d97ecaef17b13547a8fd461986e9a8e8'; //Charged(address,address[2],uint256[2])
+        '0xce248872ec99b43a7155e445b7d166cb590ee7bc73ef870908c78a6c48d06739'; // Charged(address,address,uint256)
 
-      const eventArgs = getEventArgs(receipt, eventSig, [
-        'address',
-        'address',
-        'address',
-        'uint256',
-        'uint256',
-      ]);
+      const topicsA = [
+        eventSig,
+        this.stakingRewardsContract.address,
+        rewardTokenA.address,
+      ];
 
-      const eStakingContract = eventArgs[0];
-      const eRewardTokenA = eventArgs[1];
-      const eRewardTokenB = eventArgs[2];
-      const eCollectorRewardA = new BN(eventArgs[3]);
-      const eCollectorRewardB = new BN(eventArgs[4]);
+      const topicsB = [
+        eventSig,
+        this.stakingRewardsContract.address,
+        rewardTokenB.address,
+      ];
 
-      expect(eStakingContract).to.be.eq(this.stakingRewardsContract.address);
-      expect(eRewardTokenA).to.be.eq(rewardTokenA.address);
-      expect(eRewardTokenB).to.be.eq(rewardTokenB.address);
+      const eCollectorRewardA = getEventArgs(
+        receipt,
+        topicsA,
+        ['bytes32', 'address', 'address'],
+        ['uint256']
+      )[0];
+
+      const eCollectorRewardB = getEventArgs(
+        receipt,
+        topicsB,
+        ['bytes32', 'address', 'address'],
+        ['uint256']
+      )[0];
+
       expect(eCollectorRewardA).to.be.bignumber.eq(collectorRewardA);
       expect(eCollectorRewardB).to.be.bignumber.eq(collectorRewardB);
 
@@ -425,8 +434,8 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
     });
   });
 
-  describe('leave', async function() {
-    it('leave', async function() {
+  describe('dQuick leave', async function() {
+    it('dQuick leave', async function() {
       // transfer dQuick to user proxy
       const dQuickAmount = ether('5');
       await this.dQuick.transfer(this.userProxy.address, dQuickAmount, {
@@ -440,7 +449,7 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
       // leave
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapDualMining.address,
-        getCallData(AQuickswapDualMining, 'leave', [dQuickAmount]),
+        getCallData(AQuickswapDualMining, 'dQuickLeave', [dQuickAmount]),
       ]);
 
       const receipt = await this.userProxy.execute(
@@ -474,7 +483,7 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
       // leave
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapDualMining.address,
-        getCallData(AQuickswapDualMining, 'leave', [0]),
+        getCallData(AQuickswapDualMining, 'dQuickLeave', [0]),
       ]);
 
       // should fail
@@ -482,7 +491,7 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        'leave: zero amount'
+        'dQuickLeave: zero amount'
       );
     });
 
@@ -500,7 +509,7 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
       // leave
       const data = getCallData(TaskExecutor, 'execMock', [
         this.aQuickswapDualMining.address,
-        getCallData(AQuickswapDualMining, 'leave', [dQuickAmount]),
+        getCallData(AQuickswapDualMining, 'dQuickLeave', [dQuickAmount]),
       ]);
 
       // should fail
@@ -508,7 +517,7 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
         this.userProxy.execute(this.executor.address, data, {
           from: user,
         }),
-        'leave: ERC20: burn amount exceeds balance'
+        'dQuickLeave: ERC20: burn amount exceeds balance'
       );
     });
   });

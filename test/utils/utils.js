@@ -102,10 +102,21 @@ function getActionReturn(receipt, dataTypes) {
   return actionResult;
 }
 
-function getEventArgs(receipt, eventSig, dataTypes) {
+function getEventArgs(receipt, topics, topicTypes, dataTypes) {
   var eventArgs;
   receipt.receipt.rawLogs.forEach(element => {
-    if (element.topics[0] === eventSig) {
+    let found = true;
+    for (var i = 0; i < element.topics.length; i++) {
+      if (
+        web3.eth.abi.decodeParameter(topicTypes[i], element.topics[i]) !==
+        topics[i]
+      ) {
+        found = false;
+        break;
+      }
+    }
+
+    if (found) {
       eventArgs = web3.eth.abi.decodeParameters(dataTypes, element.data);
     }
   });
@@ -233,7 +244,6 @@ async function tokenProviderCurveGauge(lpToken) {
 
 async function impersonateAndInjectEther(address) {
   // Impersonate pair
-  // await network.provider.send('hardhat_impersonateAccount', [address]);
   await impersonate(address);
 
   // Inject 1 ether

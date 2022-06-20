@@ -34,12 +34,6 @@ contract AQuickswapFarm is
     uint256 public immutable harvestFee;
     uint256 public constant FEE_BASE = 1e4;
 
-    event Charged(
-        address stakingRewards,
-        address[1] tokenAddresses,
-        uint256[1] feeAmount
-    );
-
     constructor(
         address payable _owner,
         address _collector,
@@ -85,7 +79,7 @@ contract AQuickswapFarm is
         uint256 fee = fee(reward);
         dQuick.transfer(collector, fee);
 
-        emit Charged(address(stakingRewards), [address(dQuick)], [fee]);
+        emit Charged(address(stakingRewards), address(dQuick), fee);
 
         return reward.sub(fee);
     }

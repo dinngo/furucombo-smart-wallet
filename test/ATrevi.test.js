@@ -514,29 +514,34 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Verify event
       eventSig =
-        '0x76aa03996bb864a9bb34f4e4245898b8af8527f026e6cb99c870bea43c63e028';
+        '0xce248872ec99b43a7155e445b7d166cb590ee7bc73ef870908c78a6c48d06739'; // Charged(address,address,uint256)
 
-      const eventArgs = getEventArgs(receipt, eventSig, [
-        'address',
-        'bytes32', // mem offset of second param
-        'bytes32', // mem offset of third param
-        'uint256', // length of dynamic array
-        'address',
-        'address',
-        'uint256', // length of dynamic array
-        'uint256',
-        'uint256',
-      ]);
+      const topicsA = [
+        eventSig,
+        this.fountain.address,
+        this.rewardTokenA.address,
+      ];
 
-      const eStakingContract = eventArgs[0];
-      const eRewardTokenA = eventArgs[4];
-      const eRewardTokenB = eventArgs[5];
-      const eCollectorRewardA = new BN(eventArgs[7]);
-      const eCollectorRewardB = new BN(eventArgs[8]);
+      const topicsB = [
+        eventSig,
+        this.fountain.address,
+        this.rewardTokenB.address,
+      ];
 
-      expect(eStakingContract).to.be.eq(this.fountain.address);
-      expect(eRewardTokenA).to.be.eq(this.rewardTokenA.address);
-      expect(eRewardTokenB).to.be.eq(this.rewardTokenB.address);
+      const eCollectorRewardA = getEventArgs(
+        receipt,
+        topicsA,
+        ['bytes32', 'address', 'address'],
+        ['uint256']
+      )[0];
+
+      const eCollectorRewardB = getEventArgs(
+        receipt,
+        topicsB,
+        ['bytes32', 'address', 'address'],
+        ['uint256']
+      )[0];
+
       expect(eCollectorRewardA).to.be.bignumber.eq(expectCollectorRewardA);
       expect(eCollectorRewardB).to.be.bignumber.eq(expectCollectorRewardB);
 
