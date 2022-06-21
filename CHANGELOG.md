@@ -7,7 +7,7 @@ All notable changes to this project will be documented in this file.
 ### Added
 
 - Quickswap dual mining.
-- Charged event in quickswap farming.
+- Charged event in ActionBase.
 
 ### Fixed
 

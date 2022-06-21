@@ -2,6 +2,7 @@
 pragma solidity ^0.6.0;
 
 interface IDSProxy {
+    // For fetching event easily
     event Charged(address indexed rewardSource, address indexed rewardToken, uint256 feeAmount);
     function execute(address _target, bytes calldata _data) external payable returns (bytes32 response);
     function owner() external view returns (address);
