@@ -5,6 +5,7 @@ const {
   ether,
   expectRevert,
   time,
+  expectEvent,
 } = require('@openzeppelin/test-helpers');
 
 const { duration, increase, latest } = time;
@@ -26,7 +27,6 @@ const {
   profileGas,
   getCreated,
   getActionReturn,
-  getEventArgs,
   getCallData,
   tokenProviderQuick,
   tokenProviderSushi,
@@ -513,37 +513,17 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
       ).to.be.bignumber.eq(expectCollectorRewardB);
 
       // Verify event
-      eventSig =
-        '0xce248872ec99b43a7155e445b7d166cb590ee7bc73ef870908c78a6c48d06739'; // Charged(address,address,uint256)
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.fountain.address,
+        rewardToken: this.rewardTokenA.address,
+        feeAmount: expectCollectorRewardA,
+      });
 
-      const topicsA = [
-        eventSig,
-        this.fountain.address,
-        this.rewardTokenA.address,
-      ];
-
-      const topicsB = [
-        eventSig,
-        this.fountain.address,
-        this.rewardTokenB.address,
-      ];
-
-      const eCollectorRewardA = getEventArgs(
-        receipt,
-        topicsA,
-        ['bytes32', 'address', 'address'],
-        ['uint256']
-      )[0];
-
-      const eCollectorRewardB = getEventArgs(
-        receipt,
-        topicsB,
-        ['bytes32', 'address', 'address'],
-        ['uint256']
-      )[0];
-
-      expect(eCollectorRewardA).to.be.bignumber.eq(expectCollectorRewardA);
-      expect(eCollectorRewardB).to.be.bignumber.eq(expectCollectorRewardB);
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.fountain.address,
+        rewardToken: this.rewardTokenB.address,
+        feeAmount: expectCollectorRewardB,
+      });
 
       profileGas(receipt);
     });

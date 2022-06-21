@@ -1,4 +1,10 @@
-const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
+const {
+  BN,
+  ether,
+  expectRevert,
+  expectEvent,
+  time,
+} = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
 const {
@@ -15,7 +21,6 @@ const {
   evmRevert,
   evmSnapshot,
   getCallData,
-  getEventArgs,
   getActionReturn,
   impersonate,
 } = require('./utils/utils');
@@ -291,23 +296,11 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       );
 
       // event
-      const eventSig =
-        '0xce248872ec99b43a7155e445b7d166cb590ee7bc73ef870908c78a6c48d06739'; // Charged(address,address,uint256)
-
-      const topics = [
-        eventSig,
-        this.stakingRewardsContract.address,
-        this.dQuick.address,
-      ];
-
-      const eCollectorReward = getEventArgs(
-        receipt,
-        topics,
-        ['bytes32', 'address', 'address'],
-        ['uint256']
-      )[0];
-
-      expect(eCollectorReward).to.be.bignumber.eq(expectCollectorReward);
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.stakingRewardsContract.address,
+        rewardToken: this.dQuick.address,
+        feeAmount: expectCollectorReward,
+      });
 
       // user reward should greater or equal expectUserReward
       expect(userReward).to.be.bignumber.gte(expectUserReward);

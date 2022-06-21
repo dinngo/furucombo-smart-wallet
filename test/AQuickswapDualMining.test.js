@@ -1,4 +1,10 @@
-const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
+const {
+  BN,
+  ether,
+  expectRevert,
+  expectEvent,
+  time,
+} = require('@openzeppelin/test-helpers');
 
 const {
   DS_PROXY_REGISTRY,
@@ -15,7 +21,6 @@ const {
   evmSnapshot,
   getCallData,
   getActionReturn,
-  getEventArgs,
   impersonate,
 } = require('./utils/utils');
 
@@ -382,37 +387,17 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
       );
 
       // event
-      const eventSig =
-        '0xce248872ec99b43a7155e445b7d166cb590ee7bc73ef870908c78a6c48d06739'; // Charged(address,address,uint256)
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.stakingRewardsContract.address,
+        rewardToken: rewardTokenA.address,
+        feeAmount: collectorRewardA,
+      });
 
-      const topicsA = [
-        eventSig,
-        this.stakingRewardsContract.address,
-        rewardTokenA.address,
-      ];
-
-      const topicsB = [
-        eventSig,
-        this.stakingRewardsContract.address,
-        rewardTokenB.address,
-      ];
-
-      const eCollectorRewardA = getEventArgs(
-        receipt,
-        topicsA,
-        ['bytes32', 'address', 'address'],
-        ['uint256']
-      )[0];
-
-      const eCollectorRewardB = getEventArgs(
-        receipt,
-        topicsB,
-        ['bytes32', 'address', 'address'],
-        ['uint256']
-      )[0];
-
-      expect(eCollectorRewardA).to.be.bignumber.eq(collectorRewardA);
-      expect(eCollectorRewardB).to.be.bignumber.eq(collectorRewardB);
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.stakingRewardsContract.address,
+        rewardToken: rewardTokenB.address,
+        feeAmount: collectorRewardB,
+      });
 
       // user reward should greater or equal expectUserReward
       expect(userRewardA).to.be.bignumber.gte(expectUserRewardA);

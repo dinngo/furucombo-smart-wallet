@@ -102,27 +102,6 @@ function getActionReturn(receipt, dataTypes) {
   return actionResult;
 }
 
-function getEventArgs(receipt, topics, topicTypes, dataTypes) {
-  var eventArgs;
-  receipt.receipt.rawLogs.forEach(element => {
-    let found = true;
-    for (var i = 0; i < element.topics.length; i++) {
-      if (
-        web3.eth.abi.decodeParameter(topicTypes[i], element.topics[i]) !==
-        topics[i]
-      ) {
-        found = false;
-        break;
-      }
-    }
-
-    if (found) {
-      eventArgs = web3.eth.abi.decodeParameters(dataTypes, element.data);
-    }
-  });
-  return eventArgs;
-}
-
 // Only works when one function name matches
 function getAbi(artifact, name) {
   var abi;
@@ -262,7 +241,6 @@ module.exports = {
   cUnit,
   decimal6,
   getActionReturn,
-  getEventArgs,
   getAbi,
   getCallData,
   getCreated,
