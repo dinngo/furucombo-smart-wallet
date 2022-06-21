@@ -155,6 +155,7 @@ contract ATrevi is
                 // Send charging fee to collector
                 amountGrace = _getBalance(grace).sub(amountGrace);
                 IERC20(grace).safeTransfer(collector, fee(amountGrace));
+                emit Charged(address(fountain), grace, fee(amountGrace));
             } else {
                 // Fountain harvest
                 _fountainHarvest(fountain, angels[i]);

@@ -10,6 +10,12 @@ abstract contract ActionBase {
     // prettier-ignore
     address public constant NATIVE_TOKEN_ADDRESS = 0xEeeeeEeeeEeEeeEeEeEeeEEEeeeeEeeeeeeeEEeE;
 
+    event Charged(
+        address indexed rewardSource,
+        address indexed rewardToken,
+        uint256 feeAmount
+    );
+
     function _getBalance(address token) internal view returns (uint256) {
         return _getBalanceWithAmount(token, type(uint256).max);
     }

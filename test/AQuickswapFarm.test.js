@@ -1,4 +1,10 @@
-const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
+const {
+  BN,
+  ether,
+  expectRevert,
+  expectEvent,
+  time,
+} = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
 const {
@@ -288,6 +294,13 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       const collectorRewardAmountAfter = await this.dQuick.balanceOf.call(
         collector
       );
+
+      // event
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.stakingRewardsContract.address,
+        rewardToken: this.dQuick.address,
+        feeAmount: expectCollectorReward,
+      });
 
       // user reward should greater or equal expectUserReward
       expect(userReward).to.be.bignumber.gte(expectUserReward);

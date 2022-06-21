@@ -5,6 +5,7 @@ const {
   ether,
   expectRevert,
   time,
+  expectEvent,
 } = require('@openzeppelin/test-helpers');
 
 const { duration, increase, latest } = time;
@@ -498,16 +499,31 @@ contract('ATrevi', function([_, owner, collector, user, dummy]) {
 
       // Verify fee
       const baseFee = new BN('10000');
+      const expectCollectorRewardA = rewardAAfter
+        .mul(this.fee)
+        .div(baseFee.sub(this.fee));
       expect(
         await this.rewardTokenA.balanceOf.call(collector)
-      ).to.be.bignumber.eq(
-        rewardAAfter.mul(this.fee).div(baseFee.sub(this.fee))
-      );
+      ).to.be.bignumber.eq(expectCollectorRewardA);
+      const expectCollectorRewardB = rewardBAfter
+        .mul(this.fee)
+        .div(baseFee.sub(this.fee));
       expect(
         await this.rewardTokenB.balanceOf.call(collector)
-      ).to.be.bignumber.eq(
-        rewardBAfter.mul(this.fee).div(baseFee.sub(this.fee))
-      );
+      ).to.be.bignumber.eq(expectCollectorRewardB);
+
+      // Verify event
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.fountain.address,
+        rewardToken: this.rewardTokenA.address,
+        feeAmount: expectCollectorRewardA,
+      });
+
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.fountain.address,
+        rewardToken: this.rewardTokenB.address,
+        feeAmount: expectCollectorRewardB,
+      });
 
       profileGas(receipt);
     });
