@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [1.3.0] - 2022-06-21
+
 ### Added
 
 - Quickswap dual mining.
