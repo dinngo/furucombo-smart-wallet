@@ -61,6 +61,7 @@ before_script:
 stages:
   - build
   - test
+  - analysis
   - deploy
 
 build:
@@ -109,6 +110,17 @@ test_3:
   script:
     - apt-get update && apt-get install -y netcat
     - npm run test ${UNITTEST_FILES[3]}
+  cache:
+    <<: *global_cache
+
+analysis_slither:
+  stage: analysis
+  tags:
+    - docker
+  script:
+    - apt-get update && apt-get install -y python3-pip
+    - pip3 install slither-analyzer && pip3 install solc-select
+    - npm run analysis
   cache:
     <<: *global_cache
 
