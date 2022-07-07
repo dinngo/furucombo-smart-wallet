@@ -70,6 +70,11 @@ build:
     - docker
   script:
     - npm run build
+  artifacts:
+    paths:
+      - artifacts/
+      - cache/
+    expire_in: 1 day
   cache:
     <<: *global_cache
 
