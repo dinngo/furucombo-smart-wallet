@@ -8,6 +8,7 @@
     "compile": "npx hardhat compile",
     "test": "scripts/test.sh latestblock",
     "test:block": "scripts/test.sh setblock",
+    "analysis": "scripts/analysis.sh",
     "lint:solhint": "solhint \"contracts/**/*.sol\"",
     "lint:prettier": "scripts/prettier.sh",
     "deploy": "scripts/deploy.sh"
