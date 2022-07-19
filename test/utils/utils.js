@@ -223,7 +223,6 @@ async function tokenProviderCurveGauge(lpToken) {
 
 async function impersonateAndInjectEther(address) {
   // Impersonate pair
-  // await network.provider.send('hardhat_impersonateAccount', [address]);
   await impersonate(address);
 
   // Inject 1 ether

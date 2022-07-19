@@ -1,10 +1,16 @@
-const { BN, ether, expectRevert, time } = require('@openzeppelin/test-helpers');
+const {
+  BN,
+  ether,
+  expectRevert,
+  expectEvent,
+  time,
+} = require('@openzeppelin/test-helpers');
 const { expect } = require('chai');
 
 const {
   DS_PROXY_REGISTRY,
-  QUICKSWAP_WETH_QUICK,
-  QUICKSWAP_WETH_QUICK_PROVIDER,
+  QUICKSWAP_DAI_WETH,
+  QUICKSWAP_DAI_WETH_PROVIDER,
   QUICKSWAP_QUICK,
   QUICKSWAP_DQUICK,
   QUICKSWAP_DQUICK_PROVIDER,
@@ -30,8 +36,8 @@ const IStakingRewards = artifacts.require('IStakingRewards');
 const IStakingRewardsFactory = artifacts.require('IStakingRewardsFactory');
 
 contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
-  const lpTokenAddress = QUICKSWAP_WETH_QUICK;
-  let lpTokenProvider = QUICKSWAP_WETH_QUICK_PROVIDER;
+  const lpTokenAddress = QUICKSWAP_DAI_WETH;
+  let lpTokenProvider = QUICKSWAP_DAI_WETH_PROVIDER;
   const fee = new BN('2000'); // 20% harvest fee
 
   let id;
@@ -288,6 +294,13 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
       const collectorRewardAmountAfter = await this.dQuick.balanceOf.call(
         collector
       );
+
+      // event
+      expectEvent(receipt, 'Charged', {
+        rewardSource: this.stakingRewardsContract.address,
+        rewardToken: this.dQuick.address,
+        feeAmount: expectCollectorReward,
+      });
 
       // user reward should greater or equal expectUserReward
       expect(userReward).to.be.bignumber.gte(expectUserReward);

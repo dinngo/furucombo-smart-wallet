@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [1.3.0] - 2022-06-21
+
+### Added
+
+- Quickswap dual mining.
+- Charged event in ActionBase.
+
+### Fixed
+
+- Snapshot token amount after token inject in AFurucombo.
+- Test case for quickswap farming.
+
 ## [1.2.1] - 2022-05-27
 
 ### Changed

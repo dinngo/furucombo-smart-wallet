@@ -72,11 +72,14 @@ contract AQuickswapFarm is
         delegateCallOnly
         returns (uint256)
     {
+        IStakingRewards stakingRewards = _getStakingRewardsContract(token);
         uint256 reward = _getReward(token);
 
         // charge fee.
         uint256 fee = fee(reward);
         dQuick.transfer(collector, fee);
+
+        emit Charged(address(stakingRewards), address(dQuick), fee);
 
         return reward.sub(fee);
     }
