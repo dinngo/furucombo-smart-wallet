@@ -19,3 +19,5 @@ build/
 artifacts/
 cache/
 deployments/
+coverage
+coverage.json
