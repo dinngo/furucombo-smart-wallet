@@ -39,7 +39,8 @@
     "web3": "^1.6.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "3.4.1"
+    "@openzeppelin/contracts": "3.4.1",
+    "dotenv": "^16.0.1"
   },
   "husky": {
     "hooks": {

@@ -3,6 +3,7 @@ require('hardhat-deploy');
 require('@nomiclabs/hardhat-web3');
 require('@nomiclabs/hardhat-truffle5');
 require('solidity-coverage');
+require('dotenv').config();
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -26,8 +27,7 @@ module.exports = {
   networks: {
     hardhat: {
       forking: {
-        url:
-          'https://polygon-mainnet.g.alchemy.com/v2/3xc5Eh1ui8o_MrySO2Bcn2GRQk04Ky_q',
+        url: process.env.POLYGON_MAINNET_NODE,
       },
       accounts: {
         mnemonic:
