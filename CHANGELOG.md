@@ -9,6 +9,7 @@ All notable changes to this project will be documented in this file.
 - Quickswap dual mining.
 - Charged event in ActionBase.
 - Static analysis tool - slither
+- Code coverage tool - solidity-coverage
 
 ### Fixed
 

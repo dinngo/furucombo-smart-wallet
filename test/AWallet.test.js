@@ -89,7 +89,7 @@ contract('AWallet', function([_, owner, user]) {
       balanceProxy.get();
     });
 
-    it('withdraw single token [ @skip-on-coverage ]', async function() {
+    it('withdraw single token', async function() {
       // Prepare action data
       const dummyAmount = ether('0.01');
       const withdrawAmount = depositTokenAAmount.div(new BN(2));
@@ -125,7 +125,7 @@ contract('AWallet', function([_, owner, user]) {
       );
     });
 
-    it('withdraw single token with max amount [ @skip-on-coverage ]', async function() {
+    it('withdraw single token with max amount', async function() {
       // Prepare action data
       const dummyAmount = ether('0.01');
       const data = getCallData(AWallet, 'withdrawTokens', [
@@ -160,7 +160,7 @@ contract('AWallet', function([_, owner, user]) {
       );
     });
 
-    it('withdraw single native token [ @skip-on-coverage ]', async function() {
+    it('withdraw single native token', async function() {
       // Prepare action data
       const dummyAmount = ether('0.01');
       const withdrawAmount = ether('2');
@@ -192,7 +192,7 @@ contract('AWallet', function([_, owner, user]) {
       );
     });
 
-    it('withdraw single native token with max amount [ @skip-on-coverage ]', async function() {
+    it('withdraw single native token with max amount', async function() {
       // Prepare action data
       const dummyAmount = ether('0.01');
       const data = getCallData(AWallet, 'withdrawTokens', [
@@ -220,7 +220,7 @@ contract('AWallet', function([_, owner, user]) {
       expect(await balanceUser.delta()).to.be.bignumber.eq(depositNativeAmount);
     });
 
-    it('withdraw multiple tokens [ @skip-on-coverage ]', async function() {
+    it('withdraw multiple tokens', async function() {
       // Prepare action data
       const dummyAmount = ether('0.01');
       const withdrawNativeAmount = ether('3');
