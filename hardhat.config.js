@@ -39,7 +39,6 @@ module.exports = {
       initialBaseFeePerGas: 0,
       gasPrice: 0,
       gas: 30000000,
-      timeout: 900000,
     },
   },
   mocha: {
