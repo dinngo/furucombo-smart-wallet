@@ -22,7 +22,7 @@ const {
   evmSnapshot,
   getCallData,
   getActionReturn,
-  impersonate,
+  impersonateAndInjectEther,
 } = require('./utils/utils');
 
 const AQuickswapFarm = artifacts.require('AQuickswapFarm');
@@ -49,8 +49,8 @@ contract('AQuickswapFarm', function([_, owner, collector, user, dummy]) {
     this.dQuick = await IDQuick.at(QUICKSWAP_DQUICK);
     this.quick = await IDQuick.at(QUICKSWAP_QUICK);
 
-    await impersonate(lpTokenProvider);
-    await impersonate(QUICKSWAP_DQUICK_PROVIDER);
+    await impersonateAndInjectEther(lpTokenProvider);
+    await impersonateAndInjectEther(QUICKSWAP_DQUICK_PROVIDER);
 
     this.stakingRewardsFactory = await IStakingRewardsFactory.at(
       QUICKSWAP_STAKING_REWARD_FACTORY
