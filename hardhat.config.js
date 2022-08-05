@@ -2,8 +2,10 @@ require('@nomiclabs/hardhat-waffle');
 require('hardhat-deploy');
 require('@nomiclabs/hardhat-web3');
 require('@nomiclabs/hardhat-truffle5');
+require('@nomiclabs/hardhat-etherscan');
 require('solidity-coverage');
 require('dotenv').config();
+
 /**
  * @type import('hardhat/config').HardhatUserConfig
  */
@@ -40,8 +42,17 @@ module.exports = {
       gasPrice: 0,
       gas: 30000000,
     },
+    prod: {
+      url: process.env.PROD_URL || 'https://rpc.ankr.com/polygon/',
+      chainId: process.env.PROD_CHAIN_ID || 137,
+      accounts:
+        process.env.PROD_SECRET !== undefined ? [process.env.PROD_SECRET] : [],
+    },
   },
   mocha: {
     timeout: 900000,
+  },
+  etherscan: {
+    apiKey: process.env.ETHERSCAN_KEY || '',
   },
 };
