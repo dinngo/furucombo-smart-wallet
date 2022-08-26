@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [1.4.0] - 2022-08-26
+
 ### Added
 
 - add AFurucomboV2.
