@@ -1,13 +1,14 @@
 {
   "name": "furucombo-smart-wallet",
-  "version": "1.3.0",
+  "version": "1.4.0",
   "description": "",
   "main": "",
   "scripts": {
     "build": "scripts/build.sh",
     "compile": "npx hardhat compile",
-    "test": "scripts/test.sh latestblock",
-    "test:block": "scripts/test.sh setblock",
+    "test": "npx hardhat test",
+    "coverage": "npx hardhat coverage",
+    "analysis": "scripts/analysis.sh",
     "lint:solhint": "solhint \"contracts/**/*.sol\"",
     "lint:prettier": "scripts/prettier.sh",
     "deploy": "scripts/deploy.sh"
@@ -15,7 +16,9 @@
   "author": "DINNGO",
   "license": "MIT",
   "devDependencies": {
+    "@ethersproject/hardware-wallets": "^5.0.14",
     "@nomiclabs/hardhat-ethers": "^2.0.2",
+    "@nomiclabs/hardhat-etherscan": "^3.1.0",
     "@nomiclabs/hardhat-truffle5": "^2.0.3",
     "@nomiclabs/hardhat-waffle": "^2.0.1",
     "@nomiclabs/hardhat-web3": "^2.0.0",
@@ -26,18 +29,19 @@
     "ethereumjs-wallet": "^1.0.1",
     "ethers": "^5.5.2",
     "ganache-cli": "^6.11.0",
-    "hardhat": "^2.8.0",
+    "hardhat": "^2.10.1",
     "hardhat-deploy": "^0.9.14",
     "node-fetch": "^2.6.0",
     "prettier": "1.19.1",
     "prettier-plugin-solidity": "1.0.0-beta.1",
     "solhint": "3.0.0",
+    "solidity-coverage": "^0.7.21",
     "truffle": "5.3.9",
-    "web3": "^1.6.1",
-    "@ethersproject/hardware-wallets": "^5.0.14"
+    "web3": "^1.6.1"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "3.4.1"
+    "@openzeppelin/contracts": "3.4.1",
+    "dotenv": "^16.0.1"
   },
   "husky": {
     "hooks": {

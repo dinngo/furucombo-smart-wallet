@@ -21,7 +21,7 @@ const {
   evmSnapshot,
   getCallData,
   getActionReturn,
-  impersonate,
+  impersonateAndInjectEther,
 } = require('./utils/utils');
 
 const AQuickswapDualMining = artifacts.require('AQuickswapDualMining');
@@ -51,8 +51,8 @@ contract('AQuickswapDualMining', function([_, owner, collector, user, dummy]) {
     this.dQuick = await IDQuick.at(QUICKSWAP_DQUICK);
     this.quick = await IDQuick.at(QUICKSWAP_QUICK);
 
-    await impersonate(lpTokenProvider);
-    await impersonate(QUICKSWAP_DQUICK_PROVIDER);
+    await impersonateAndInjectEther(lpTokenProvider);
+    await impersonateAndInjectEther(QUICKSWAP_DQUICK_PROVIDER);
 
     this.stakingDualRewardsFactory = await IStakingDualRewardsFactory.at(
       QUICKSWAP_STAKING_DUAL_REWARDS_FACTORY

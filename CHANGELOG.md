@@ -4,12 +4,20 @@ All notable changes to this project will be documented in this file.
 
 ## [unreleased]
 
+## [1.4.0] - 2022-08-26
+
+### Added
+
+- add AFurucomboV2.
+
 ## [1.3.0] - 2022-06-21
 
 ### Added
 
 - Quickswap dual mining.
 - Charged event in ActionBase.
+- Static analysis tool - slither
+- Code coverage tool - solidity-coverage
 
 ### Fixed
 
